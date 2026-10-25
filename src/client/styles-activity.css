@@ -1,0 +1,459 @@
+/* ==========================================================================
+   Nimbus — upload activity, drag & drop, startup
+   ========================================================================== */
+
+.upload-tray {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  width: 392px;
+  max-width: calc(100vw - 32px);
+  max-height: min(64vh, 560px);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  animation: tray-in 0.25s cubic-bezier(0.2, 0.85, 0.3, 1) both;
+}
+
+.upload-tray.is-collapsed {
+  max-height: none;
+}
+
+.upload-tray-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex: none;
+  padding: 11px 12px 11px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.upload-tray-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.upload-pulse {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--text-muted);
+}
+
+.upload-pulse.is-active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.upload-tray-title strong {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.upload-tray-title span:not(.upload-pulse) {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 240px;
+}
+
+.upload-tray-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+}
+
+.upload-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.upload-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px 11px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.upload-row:last-child {
+  border-bottom: 0;
+}
+
+.upload-row-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  margin-top: 1px;
+  border-radius: 9px;
+  background: var(--surface-2);
+  color: var(--text-secondary);
+}
+
+.upload-row-icon.kind-photo {
+  background: rgba(14, 165, 233, 0.11);
+  color: #0284c7;
+}
+
+.upload-row-icon.kind-video {
+  background: rgba(168, 85, 247, 0.11);
+  color: #9333ea;
+}
+
+.upload-row-icon.kind-file {
+  background: rgba(245, 158, 11, 0.13);
+  color: #b45309;
+}
+
+[data-theme="dark"] .upload-row-icon.kind-photo {
+  color: #7dd3fc;
+}
+
+[data-theme="dark"] .upload-row-icon.kind-video {
+  color: #d8b4fe;
+}
+
+[data-theme="dark"] .upload-row-icon.kind-file {
+  color: #fcd34d;
+}
+
+.upload-row-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.upload-row-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.35;
+}
+
+.upload-row-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+  font-size: 10.5px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.upload-row-status span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.phase-error .upload-row-status {
+  color: var(--danger);
+}
+
+.phase-done .upload-row-status {
+  color: var(--success);
+}
+
+.phase-cancelled .upload-row-status {
+  color: var(--text-muted);
+}
+
+.upload-progress {
+  height: 3px;
+  margin-top: 7px;
+  border-radius: 99px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+
+.upload-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 0.25s ease;
+}
+
+.phase-done .upload-progress span {
+  background: var(--success);
+}
+
+.phase-error .upload-progress span {
+  background: var(--danger);
+}
+
+.phase-cancelled .upload-progress span {
+  background: var(--text-muted);
+}
+
+.upload-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+  margin-top: 2px;
+}
+
+.upload-action {
+  height: 27px;
+  padding: 0 9px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.upload-action:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.upload-tray-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex: none;
+  padding: 8px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-size: 10.5px;
+}
+
+/* Drag and drop ---------------------------------------------------------- */
+
+.drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+  background: rgba(8, 11, 20, 0.55);
+  backdrop-filter: blur(10px);
+  animation: backdrop-in 0.15s ease both;
+  pointer-events: none;
+}
+
+.drop-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: min(520px, 100%);
+  padding: 52px 32px;
+  border: 2px dashed rgba(129, 140, 248, 0.7);
+  border-radius: 26px;
+  background: var(--surface);
+  box-shadow: var(--shadow-xl);
+  text-align: center;
+  animation: drop-in 0.22s cubic-bezier(0.2, 0.85, 0.3, 1) both;
+}
+
+.drop-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 82px;
+  height: 82px;
+  margin-bottom: 8px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, var(--accent-soft), rgba(6, 182, 212, 0.14));
+  color: var(--accent);
+}
+
+.drop-card h2 {
+  font-size: 22px;
+  letter-spacing: -0.03em;
+}
+
+.drop-card p {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.drop-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 5px 11px;
+  border-radius: 99px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+/* Splash / boot ---------------------------------------------------------- */
+
+.splash-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 28px;
+  background:
+    radial-gradient(circle at 50% 32%, rgba(99, 102, 241, 0.12), transparent 46%),
+    var(--bg);
+  color: var(--text-muted);
+  font-size: 12.5px;
+}
+
+.splash-mark {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 84px;
+  height: 84px;
+}
+
+.splash-mark svg {
+  border-radius: 26%;
+  box-shadow: 0 22px 48px -16px rgba(79, 70, 229, 0.65);
+}
+
+.splash-pulse {
+  position: absolute;
+  inset: -10px;
+  border-radius: 34%;
+  border: 1.5px solid rgba(99, 102, 241, 0.35);
+  animation: splash-pulse 1.9s ease-out infinite;
+}
+
+.splash-bar {
+  position: relative;
+  width: 132px;
+  height: 3px;
+  border-radius: 99px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+
+.splash-bar span {
+  position: absolute;
+  width: 42%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), #06b6d4);
+  animation: splash-bar 1.35s ease-in-out infinite;
+}
+
+.splash-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: min(430px, 100%);
+  padding: 34px 30px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+}
+
+.splash-error-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  margin-bottom: 4px;
+  border-radius: 15px;
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.splash-card h1 {
+  font-size: 19px;
+  letter-spacing: -0.025em;
+  color: var(--text);
+}
+
+.splash-card p {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
+.splash-card .btn {
+  margin-top: 8px;
+}
+
+.splash-note {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+@keyframes tray-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+}
+
+@keyframes drop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+@keyframes splash-pulse {
+  0% {
+    transform: scale(0.94);
+    opacity: 0.9;
+  }
+  70% {
+    transform: scale(1.14);
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes splash-bar {
+  0% {
+    left: -45%;
+  }
+  100% {
+    left: 105%;
+  }
+}

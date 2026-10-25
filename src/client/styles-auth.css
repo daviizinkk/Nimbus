@@ -1,0 +1,740 @@
+/* ==========================================================================
+   Nimbus — onboarding and sign in
+   ========================================================================== */
+
+.onboarding {
+  display: grid;
+  grid-template-columns: minmax(380px, 43%) minmax(0, 1fr);
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--bg);
+}
+
+.onboarding-brand {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 38px 46px 32px;
+  overflow: hidden;
+  color: #eef2ff;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(99, 102, 241, 0.55), transparent 38%),
+    radial-gradient(circle at 88% 82%, rgba(6, 182, 212, 0.26), transparent 42%),
+    linear-gradient(155deg, #171b3d 0%, #11142b 48%, #0b0e1f 100%);
+}
+
+.onboarding-brand::before {
+  content: "";
+  position: absolute;
+  width: 520px;
+  height: 520px;
+  right: -240px;
+  top: 24%;
+  border-radius: 50%;
+  border: 1px solid rgba(165, 180, 252, 0.14);
+  box-shadow: 0 0 0 80px rgba(165, 180, 252, 0.035), 0 0 0 160px rgba(165, 180, 252, 0.022);
+  pointer-events: none;
+}
+
+.onboarding-brand-top {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.onboarding-brand .logo-lockup {
+  color: #f8fafc;
+}
+
+.onboarding-brand .logo-wordmark {
+  font-size: 21px;
+}
+
+.onboarding-badge {
+  padding: 4px 10px;
+  border: 1px solid rgba(165, 180, 252, 0.24);
+  border-radius: 99px;
+  background: rgba(99, 102, 241, 0.12);
+  color: #c7d2fe;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.onboarding-pitch {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 430px;
+  margin: 36px 0;
+}
+
+.onboarding-pitch h1 {
+  font-size: clamp(30px, 3.1vw, 42px);
+  line-height: 1.08;
+  letter-spacing: -0.045em;
+  font-weight: 700;
+  background: linear-gradient(120deg, #ffffff 20%, #c7d2fe 70%, #a5f3fc 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.onboarding-pitch > p {
+  margin-top: 14px;
+  max-width: 380px;
+  font-size: 13px;
+  line-height: 1.65;
+  color: rgba(226, 232, 240, 0.64);
+}
+
+.onboarding-features {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 32px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.onboarding-features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.onboarding-features li > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border: 1px solid rgba(165, 180, 252, 0.17);
+  border-radius: 10px;
+  background: rgba(99, 102, 241, 0.13);
+  color: #a5b4fc;
+}
+
+.onboarding-features li:nth-child(2) > span {
+  background: rgba(6, 182, 212, 0.11);
+  border-color: rgba(103, 232, 249, 0.15);
+  color: #67e8f9;
+}
+
+.onboarding-features li:nth-child(3) > span {
+  background: rgba(16, 185, 129, 0.11);
+  border-color: rgba(110, 231, 183, 0.15);
+  color: #6ee7b7;
+}
+
+.onboarding-features li:nth-child(4) > span {
+  background: rgba(245, 158, 11, 0.11);
+  border-color: rgba(252, 211, 77, 0.16);
+  color: #fcd34d;
+}
+
+.onboarding-features strong {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 650;
+  color: #edf2ff;
+}
+
+.onboarding-features p {
+  margin-top: 2px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: rgba(203, 213, 225, 0.54);
+}
+
+.onboarding-foot {
+  position: relative;
+  z-index: 1;
+  font-size: 10.5px;
+  color: rgba(148, 163, 184, 0.5);
+}
+
+.onboarding-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: 40px 34px;
+  overflow-y: auto;
+}
+
+.onboarding-card {
+  width: 100%;
+  max-width: 610px;
+  padding: 26px 30px 24px;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+}
+
+.onboarding-progress {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 24px;
+}
+
+.onboarding-progress > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 25px;
+  height: 25px;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.onboarding-progress > span:not(:last-of-type)::after {
+  content: "";
+  position: absolute;
+}
+
+.onboarding-progress > span.is-current {
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  box-shadow: 0 3px 9px -2px rgba(79, 70, 229, 0.5);
+}
+
+.onboarding-progress > span.is-done {
+  border-color: transparent;
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.onboarding-progress small {
+  margin-left: auto;
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.onboarding-step {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.onboarding-step-head {
+  margin-bottom: 22px;
+}
+
+.step-eyebrow {
+  display: inline-block;
+  margin-bottom: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.onboarding-step-head h2 {
+  font-size: 24px;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+}
+
+.onboarding-step-head p {
+  margin-top: 6px;
+  max-width: 460px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.onboarding-step > .input,
+.onboarding-step > .input-lg {
+  margin-bottom: 16px;
+}
+
+.onboarding-passwords {
+  margin-bottom: 4px;
+}
+
+.password-meter {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  margin: 12px 0 18px;
+}
+
+.password-meter > span {
+  height: 3px;
+  border-radius: 99px;
+  background: var(--surface-3);
+  transition: background 0.2s ease;
+}
+
+.password-meter > span.score-1 {
+  background: var(--danger);
+}
+
+.password-meter > span.score-2 {
+  background: #f79009;
+}
+
+.password-meter > span.score-3 {
+  background: #12b76a;
+}
+
+.password-meter > span.score-4 {
+  background: #067647;
+}
+
+.password-meter small {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+.onboarding-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 6px;
+  padding: 12px 13px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text-muted);
+}
+
+.onboarding-hint svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--accent);
+}
+
+.onboarding-hint p {
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.onboarding-hint code {
+  font-size: 10px;
+}
+
+/* Storage picker --------------------------------------------------------- */
+
+.storage-choice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.storage-choice {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 13px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+.storage-choice:hover {
+  background: var(--surface-2);
+  border-color: var(--border-strong);
+}
+
+.storage-choice.is-selected {
+  border-color: var(--accent);
+  background: var(--surface);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.storage-choice-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 10px;
+}
+
+.storage-choice-icon.local {
+  background: rgba(16, 185, 129, 0.11);
+  color: #059669;
+}
+
+.storage-choice-icon.github {
+  background: rgba(107, 114, 128, 0.13);
+  color: #4b5563;
+}
+
+.storage-choice-icon.webdav {
+  background: rgba(14, 165, 233, 0.11);
+  color: #0284c7;
+}
+
+[data-theme="dark"] .storage-choice-icon.local {
+  color: #6ee7b7;
+}
+
+[data-theme="dark"] .storage-choice-icon.github {
+  color: #d1d5db;
+}
+
+[data-theme="dark"] .storage-choice-icon.webdav {
+  color: #7dd3fc;
+}
+
+.storage-choice-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.storage-choice-copy strong {
+  font-size: 12.5px;
+  font-weight: 650;
+}
+
+.storage-choice-copy small {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.radio-dot {
+  position: relative;
+  width: 17px;
+  height: 17px;
+  flex: none;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 50%;
+  background: var(--surface);
+}
+
+.storage-choice.is-selected .radio-dot {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: inset 0 0 0 3.5px var(--surface);
+}
+
+.onboarding-provider-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 15px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+  animation: fade-in 0.2s ease both;
+}
+
+.onboarding-provider-form .field-hint {
+  margin-top: -3px;
+}
+
+.onboarding-test-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.inline-test {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 11px;
+  line-height: 1.4;
+  font-weight: 500;
+  min-width: 0;
+}
+
+.inline-test svg {
+  flex: none;
+  margin-top: 1px;
+}
+
+.inline-test.is-ok {
+  color: var(--success);
+}
+
+.inline-test.is-error {
+  color: var(--danger);
+}
+
+/* Review ----------------------------------------------------------------- */
+
+.review-card {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.review-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+
+.review-row:last-child {
+  border-bottom: 0;
+}
+
+.review-row span {
+  color: var(--text-muted);
+}
+
+.review-row strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 650;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.review-row strong svg {
+  color: var(--accent);
+}
+
+.review-note {
+  margin-top: 12px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.onboarding-create {
+  width: 100%;
+  margin-top: 18px;
+}
+
+.onboarding-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.onboarding-actions > span:empty {
+  display: none;
+}
+
+.onboarding-actions-note {
+  flex: 1;
+  text-align: right;
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+/* Login ------------------------------------------------------------------ */
+
+.login-screen {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 28px;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.login-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle at 1px 1px, var(--border-strong) 1px, transparent 0);
+  background-size: 26px 26px;
+  opacity: 0.5;
+  mask-image: radial-gradient(circle at 50% 45%, #000 0%, transparent 68%);
+  -webkit-mask-image: radial-gradient(circle at 50% 45%, #000 0%, transparent 68%);
+  pointer-events: none;
+}
+
+.login-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.login-orb-a {
+  width: 480px;
+  height: 480px;
+  top: -190px;
+  left: 8%;
+  background: rgba(99, 102, 241, 0.5);
+}
+
+.login-orb-b {
+  width: 440px;
+  height: 440px;
+  bottom: -210px;
+  right: 6%;
+  background: rgba(6, 182, 212, 0.36);
+}
+
+[data-theme="dark"] .login-orb {
+  opacity: 0.24;
+}
+
+.login-wrap {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  max-width: 404px;
+}
+
+.login-brand {
+  margin-bottom: 2px;
+}
+
+.login-brand .logo-wordmark {
+  font-size: 22px;
+}
+
+.login-card {
+  width: 100%;
+  padding: 30px 30px 24px;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+}
+
+.login-lock {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 14px;
+  border-radius: 17px;
+  background: linear-gradient(135deg, var(--accent-soft), rgba(6, 182, 212, 0.12));
+  color: var(--accent);
+}
+
+.login-card h1 {
+  font-size: 22px;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.login-subtitle {
+  margin: 7px auto 20px;
+  max-width: 290px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.login-card form {
+  text-align: left;
+}
+
+.login-submit {
+  width: 100%;
+  margin-top: 14px;
+}
+
+.login-submit svg:last-child {
+  margin-left: auto;
+}
+
+.login-forgot {
+  display: block;
+  margin: 13px auto 0;
+  padding: 3px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: var(--border-strong);
+  text-underline-offset: 3px;
+}
+
+.login-forgot:hover {
+  color: var(--accent);
+  text-decoration-color: currentColor;
+}
+
+.login-forgot:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.login-foot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 10.5px;
+}
+
+.login-foot svg {
+  color: var(--success);
+}
+
+.login-version {
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}

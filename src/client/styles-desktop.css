@@ -1,0 +1,132 @@
+/* ==========================================================================
+   Desktop shell (Electron)
+   ========================================================================== */
+
+.desktop-titlebar {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 120;
+  display: flex;
+  align-items: stretch;
+  height: 36px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  -webkit-app-region: drag;
+  user-select: none;
+}
+
+.desktop-titlebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 13px;
+  min-width: 0;
+}
+
+.desktop-titlebar-brand .logo-lockup {
+  flex: none;
+}
+
+.desktop-titlebar-name {
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.desktop-titlebar-badge {
+  padding: 1px 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  color: var(--text-muted);
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.desktop-titlebar-drag {
+  flex: 1;
+  min-width: 40px;
+}
+
+.desktop-window-controls {
+  display: flex;
+  align-items: stretch;
+  -webkit-app-region: no-drag;
+}
+
+.desktop-window-btn {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 35px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: default;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.desktop-window-btn:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.desktop-window-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.desktop-window-btn.is-close:hover {
+  background: #e81123;
+  color: #ffffff;
+}
+
+/* The fixed titlebar occupies real layout space above the web app. */
+:root.nimbus-desktop body {
+  padding-top: 36px;
+}
+
+:root.nimbus-desktop #root {
+  min-height: calc(100vh - 36px);
+  min-height: calc(100dvh - 36px);
+}
+
+:root.nimbus-desktop .app-shell,
+:root.nimbus-desktop .app-main {
+  height: calc(100vh - 36px);
+  height: calc(100dvh - 36px);
+  min-height: 0;
+}
+
+:root.nimbus-desktop .splash-screen,
+:root.nimbus-desktop .login-screen,
+:root.nimbus-desktop .onboarding,
+:root.nimbus-desktop .onboarding-brand {
+  min-height: calc(100vh - 36px);
+  min-height: calc(100dvh - 36px);
+}
+
+:root.nimbus-desktop .sidebar {
+  height: 100%;
+}
+
+@media (max-width: 1024px) {
+  :root.nimbus-desktop .sidebar {
+    top: 36px;
+    height: calc(100vh - 36px);
+    height: calc(100dvh - 36px);
+  }
+
+  :root.nimbus-desktop .sidebar-scrim {
+    top: 36px;
+  }
+}
+
+@media (max-width: 640px) {
+  .desktop-titlebar-badge {
+    display: none;
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "name": "nimbus-vault",
+  "version": "1.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Nimbus — a private, self-hosted photo, video and file library backed by the cloud you already own.",
+  "author": "Nimbus",
+  "main": "desktop/main.cjs",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:server": "tsx watch src/server/index.ts",
+    "dev:client": "vite",
+    "build": "npm run build:client && npm run build:server",
+    "build:client": "vite build",
+    "build:server": "esbuild src/server/index.ts --bundle --platform=node --format=esm --target=node24 --packages=external --sourcemap --outfile=dist/server/index.js && esbuild src/server/cleanup-cli.ts --bundle --platform=node --format=esm --target=node24 --packages=external --sourcemap --outfile=dist/server/cleanup.js",
+    "start": "node dist/server/index.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "tsx --test test/*.test.ts",
+    "reset-password": "node scripts/reset-password.mjs",
+    "desktop:icon": "node scripts/make-icon.mjs",
+    "desktop:dev": "npm run build && npm run desktop:icon && electron . --dev",
+    "desktop:pack": "npm run build && npm run desktop:icon && electron-builder --dir",
+    "desktop:dist": "npm run build && npm run desktop:icon && electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "com.nimbus.vault",
+    "productName": "Nimbus",
+    "asar": false,
+    "npmRebuild": false,
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "desktop/**/*",
+      "build/icon.png",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "Nimbus-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Nimbus",
+      "include": "build/installer.nsh",
+      "deleteAppDataOnUninstall": false
+    }
+  },
+  "dependencies": {
+    "@xhayper/discord-rpc": "^1.5.1",
+    "fastify": "^5.12.7",
+    "lucide-react": "^1.61.0",
+    "mime-types": "^3.0.2",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "sharp": "^0.35.5",
+    "undici": "^8.12.3"
+  },
+  "devDependencies": {
+    "@types/mime-types": "^3.0.1",
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^5.2.0",
+    "electron": "^45.0.0",
+    "electron-builder": "^26.18.0",
+    "esbuild": "^0.28.2",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.7"
+  }
+}
