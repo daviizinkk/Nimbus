@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import type { FolderDTO, FolderPathSegment, ItemDTO, SortMode } from '../../../shared/types';
 import type { Section } from '../hooks';
 import {
@@ -280,8 +281,7 @@ export function Gallery({
     ? 'Search results'
     : folderView && currentFolderName
       ? currentFolderName
-      : titleForSection(section);
-  const subtitle = (() => {
+      : titleForSection(section);  const subtitle = (() => {
     if (query) {
       return `${total.toLocaleString()} ${total === 1 ? 'item' : 'items'} matching “${query}”`;
     }
@@ -295,6 +295,67 @@ export function Gallery({
     }
     return total > 0 ? `${total.toLocaleString()} ${total === 1 ? 'item' : 'items'}` : 'Nothing here yet';
   })();
+
+  const focusCard = (card: HTMLElement) => {
+    card.focus({ preventScroll: true });
+    card.scrollIntoView({
+      block: 'nearest',
+      inline: 'nearest',
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+    });
+  };
+
+  /**
+   * Roving keyboard navigation for the media grid. Left/right walk the DOM,
+   * while up/down pick the geometrically closest tile in that direction so the
+   * grid keeps working across date groups and variable column counts.
+   */
+  const handleGridKeys = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
+    const target = (event.target as HTMLElement | null)?.closest<HTMLElement>('.media-card');
+    if (!target) return;
+    const key = event.key;
+    if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(key)) return;
+    const cards = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('.media-card'));
+    const index = cards.indexOf(target);
+    if (index < 0) return;
+    event.preventDefault();
+
+    if (key === 'Home') {
+      focusCard(cards[0]);
+      return;
+    }
+    if (key === 'End') {
+      focusCard(cards[cards.length - 1]);
+      return;
+    }
+    if (key === 'ArrowRight') {
+      focusCard(cards[Math.min(cards.length - 1, index + 1)]);
+      return;
+    }
+    if (key === 'ArrowLeft') {
+      focusCard(cards[Math.max(0, index - 1)]);
+      return;
+    }
+
+    const rect = target.getBoundingClientRect();
+    const down = key === 'ArrowDown';
+    let best: HTMLElement | null = null;
+    let bestScore = Number.POSITIVE_INFINITY;
+    for (const card of cards) {
+      if (card === target) continue;
+      const candidate = card.getBoundingClientRect();
+      const vertical = candidate.top - rect.top;
+      if (down ? vertical <= rect.height * 0.4 : vertical >= -rect.height * 0.4) continue;
+      const horizontal = Math.abs(candidate.left - rect.left);
+      const score = Math.abs(vertical) * 1.6 + horizontal;
+      if (score < bestScore) {
+        bestScore = score;
+        best = card;
+      }
+    }
+    if (best) focusCard(best);
+  };
 
   const showInitialLoading = loading && items.length === 0;
   const showFolders = folderView && (folders.length > 0 || (foldersLoading && items.length === 0));
@@ -447,7 +508,7 @@ export function Gallery({
           onClearSearch={onClearSearch}
         />
       ) : (
-        <div className="gallery-groups">
+        <div className="gallery-groups" onKeyDown={handleGridKeys}>
           {groups.map((group, groupIndex) => (
             <section className="date-group" key={`${group.label ?? 'all'}-${groupIndex}`}>
               {group.label ? <h2 className="date-heading">{group.label}</h2> : null}

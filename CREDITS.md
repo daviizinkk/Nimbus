@@ -21,10 +21,12 @@ Nimbus stands on the work of these open-source projects:
 
 ## Artwork
 
-The Nimbus cloud mark, Windows icon and release banner are generated from the vector sources
-in [`public/favicon.svg`](public/favicon.svg) and
-[`public/nimbus-banner.svg`](public/nimbus-banner.svg). Run `npm run desktop:icon` to rebuild
-the standard icon sizes and banner resolutions in `build/`.
+The Nimbus cloud mark comes from the 1.2.0 Liquid Glass masters in
+[`build/updated_v1_2_0_icon_blue.png`](build/updated_v1_2_0_icon_blue.png) (primary) and
+[`build/updated_v1_2_0_icon_white.png`](build/updated_v1_2_0_icon_white.png) (alternate).
+The release banner layout lives in [`public/nimbus-banner.svg`](public/nimbus-banner.svg)
+and is composited with the primary mark. Run `npm run desktop:icon` to rebuild the Windows
+icon, tray glyph, favicon and banner resolutions in `build/` and `public/nimbus-icon.png`.
 
 ## Third-party services
 

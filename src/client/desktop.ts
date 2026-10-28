@@ -1,9 +1,14 @@
 import type {
   DesktopActionResult,
   DesktopActivity,
+  DesktopCommand,
   DesktopDiscordConfig,
   DesktopDiscordStatus,
   DesktopInfo,
+  DesktopNotificationResult,
+  DesktopPreferences,
+  DesktopPreferencesResult,
+  DesktopUploadSummary,
 } from '../../shared/types';
 
 export interface DesktopBridge {
@@ -11,8 +16,14 @@ export interface DesktopBridge {
   minimize: () => void;
   toggleMaximize: () => void;
   close: () => void;
+  hideToTray: () => void;
   isMaximized: () => Promise<boolean>;
   getInfo: () => Promise<DesktopInfo>;
+  getPreferences: () => Promise<DesktopPreferences>;
+  savePreferences: (preferences: DesktopPreferences) => Promise<DesktopPreferencesResult>;
+  notifyUpload: (summary: DesktopUploadSummary) => Promise<DesktopNotificationResult>;
+  onPreferences: (callback: (preferences: DesktopPreferences) => void) => () => void;
+  onCommand: (callback: (command: DesktopCommand) => void) => () => void;
   onMaximized: (callback: (maximized: boolean) => void) => () => void;
   resetPassword: (password: string) => Promise<DesktopActionResult>;
   openDataFolder: () => Promise<DesktopActionResult>;

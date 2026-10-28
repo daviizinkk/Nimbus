@@ -107,6 +107,7 @@ export function MediaCard({
       className={`media-card${selected ? ' is-selected' : ''}${selectionMode ? ' selection-mode' : ''}${isFile ? ' is-file' : ''}`}
       role="button"
       tabIndex={0}
+      data-item-id={item.id}
       onClick={handleClick}
       onKeyDown={handleKey}
       aria-label={`${item.name}, ${formatBytes(item.size)}`}
@@ -131,6 +132,7 @@ export function MediaCard({
             alt=""
             loading="lazy"
             decoding="async"
+            fetchPriority="low"
             draggable={false}
             onLoad={() => setLoaded(true)}
             onError={() => setImageFailed(true)}

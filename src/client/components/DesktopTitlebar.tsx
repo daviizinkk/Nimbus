@@ -10,6 +10,7 @@ import { Logo } from './ui';
  */
 export function DesktopTitlebar() {
   const [maximized, setMaximized] = useState(false);
+  const [closeToTray, setCloseToTray] = useState(true);
 
   useEffect(() => {
     if (!desktop) return;
@@ -17,12 +18,19 @@ export function DesktopTitlebar() {
     void desktop.isMaximized().then((value) => {
       if (active) setMaximized(value);
     });
+    void desktop.getPreferences().then((value) => {
+      if (active) setCloseToTray(value.closeToTray);
+    });
     const unsubscribe = desktop.onMaximized((value) => {
       if (active) setMaximized(value);
+    });
+    const unsubscribePreferences = desktop.onPreferences((value) => {
+      if (active) setCloseToTray(value.closeToTray);
     });
     return () => {
       active = false;
       unsubscribe?.();
+      unsubscribePreferences?.();
     };
   }, []);
 
@@ -59,8 +67,8 @@ export function DesktopTitlebar() {
         <button
           type="button"
           className="desktop-window-btn is-close"
-          aria-label="Close"
-          title="Close"
+          aria-label={closeToTray ? 'Close to tray' : 'Close'}
+          title={closeToTray ? 'Close to tray — Nimbus keeps running' : 'Close'}
           onClick={() => bridge.close()}
         >
           <X size={17} />

@@ -198,6 +198,19 @@
   opacity: 1;
 }
 
+.viewer-photo-preview {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: blur(16px) saturate(1.05);
+  opacity: 0.65;
+  transform: scale(1.015);
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+
 .viewer-photo.is-zoomed {
   max-width: none;
   max-height: none;

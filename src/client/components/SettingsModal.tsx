@@ -18,6 +18,7 @@ import {
   HardDrive,
   Info,
   KeyRound,
+  Keyboard,
   Laptop,
   LockKeyhole,
   LogOut,
@@ -35,7 +36,7 @@ import {
 import { api } from '../api';
 import { isDesktop } from '../desktop';
 import { formatBytes } from '../format';
-import type { ThemeMode } from '../hooks';
+import type { InterfaceStyle, ThemeMode } from '../hooks';
 import { DeleteLibraryDialog } from './DeleteLibraryDialog';
 import { DesktopSettings } from './DesktopSettings';
 import { ConfirmDialog, Field, Modal, Spinner, Toggle } from './ui';
@@ -47,8 +48,11 @@ interface SettingsModalProps {
   activeProvider: ProviderId;
   stats: StorageStats | null;
   theme: ThemeMode;
+  uiStyle: InterfaceStyle;
   initialTab?: SettingsTab;
   onThemeChange: (theme: ThemeMode) => void;
+  onUiStyleChange: (style: InterfaceStyle) => void;
+  onOpenShortcuts: () => void;
   onClose: () => void;
   onSettingsChanged: (settings: AppSettingsView) => void;
   onCacheChanged: (cache: CacheStats) => void;
@@ -106,8 +110,11 @@ export function SettingsModal({
   activeProvider,
   stats,
   theme,
+  uiStyle,
   initialTab = 'general',
   onThemeChange,
+  onUiStyleChange,
+  onOpenShortcuts,
   onClose,
   onSettingsChanged,
   onCacheChanged,
@@ -508,6 +515,22 @@ export function SettingsModal({
                       );
                     })}
                   </div>
+                  <Toggle
+                    checked={uiStyle === 'glass'}
+                    onChange={(checked) => onUiStyleChange(checked ? 'glass' : 'classic')}
+                    label="Liquid Glass interface"
+                    description="Translucent surfaces, iridescent light and softer motion. Turn off for the original flat look."
+                  />
+                  <button type="button" className="settings-inline-action" onClick={onOpenShortcuts}>
+                    <span className="settings-inline-icon">
+                      <Keyboard size={17} />
+                    </span>
+                    <span className="settings-inline-copy">
+                      <strong>Keyboard shortcuts</strong>
+                      <small>Jump between sections, select, favorite and preview faster.</small>
+                    </span>
+                    <kbd>?</kbd>
+                  </button>
                   <p className="form-note">Appearance is remembered on this device.</p>
                 </div>
 
@@ -1123,7 +1146,7 @@ export function SettingsModal({
                   </div>
                   <div>
                     <h3>Nimbus</h3>
-                    <p>Version {settingView?.version ?? '1.1.0'} · A private cloud you actually own.</p>
+                    <p>Version {settingView?.version ?? '1.2.0'} · A private cloud you actually own.</p>
                   </div>
                 </div>
 

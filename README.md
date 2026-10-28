@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/daviizinkk/Nimbus/releases/latest">
-    <img src="https://img.shields.io/badge/Download_for_Windows-1.1.0-6366f1?style=for-the-badge&logo=windows&logoColor=white" alt="Download Nimbus 1.1.0 for Windows">
+    <img src="https://img.shields.io/badge/Download_for_Windows-1.2.0-6366f1?style=for-the-badge&logo=windows&logoColor=white" alt="Download Nimbus 1.2.0 for Windows">
   </a>
   <a href="#quick-start">
     <img src="https://img.shields.io/badge/Run_from_source-Node.js_24-0ea5e9?style=for-the-badge&logo=node.js&logoColor=white" alt="Run Nimbus from source">
@@ -19,7 +19,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.1.0-6366f1?style=flat-square" alt="Version 1.1.0">
+  <img src="https://img.shields.io/badge/version-1.2.0-6366f1?style=flat-square" alt="Version 1.2.0">
   <img src="https://img.shields.io/badge/platform-Windows_%7C_Web-0ea5e9?style=flat-square" alt="Windows and web">
   <img src="https://img.shields.io/badge/storage-Local_%7C_GitHub_%7C_WebDAV-10b981?style=flat-square" alt="Local, GitHub Releases and WebDAV">
   <img src="https://img.shields.io/badge/cache-encrypted-8b5cf6?style=flat-square" alt="Encrypted local cache">
@@ -27,14 +27,16 @@
 
 ## Download
 
-**Nimbus 1.1.0 for Windows 10/11 x64** is available from the
+**Nimbus 1.2.0 for Windows 10/11 x64** is available from the
 [Releases page](https://github.com/daviizinkk/Nimbus/releases/latest).
 
-1. Download **Nimbus-Setup-1.1.0.exe**.
+1. Download **Nimbus-Setup-1.2.0.exe**.
 2. Run the installer and choose an install folder. The desktop shortcut is optional; the
    Start menu entry is always created.
 3. Launch **Nimbus** and complete the first-run setup. Your library stays on this PC unless
    you choose GitHub Releases or WebDAV for originals.
+
+Upgrading from 1.0.0 or 1.1.0 keeps the existing library and desktop settings in place.
 
 The installer is unsigned, so Windows SmartScreen may ask for confirmation. Choose
 **More info → Run anyway** if you trust the download. SHA-256 checksums and release notes are
@@ -54,6 +56,16 @@ Prefer the browser? Nimbus runs anywhere Node.js 24 is available. See
   <em>The Photos view: a pinned library sidebar, instant tab switching, and a media grid that owns the scroll.</em>
 </p>
 
+<p align="center">
+  <img src="docs/screenshots/nimbus-viewer.png" alt="The Nimbus viewer with file details open beside a photo" width="32%">
+  <img src="docs/screenshots/nimbus-shortcuts.png" alt="The Nimbus keyboard shortcut sheet" width="32%">
+  <img src="docs/screenshots/nimbus-settings.png" alt="Nimbus desktop settings for the tray, startup and upload notifications" width="32%">
+</p>
+
+<p align="center">
+  <em>The viewer keeps details beside the image, the shortcut sheet covers keyboard navigation, and Desktop &amp; Discord groups the tray, startup and notification controls.</em>
+</p>
+
 ## Why Nimbus
 
 | Feature | What it means |
@@ -61,28 +73,36 @@ Prefer the browser? Nimbus runs anywhere Node.js 24 is available. See
 | **Bring your own storage** | Keep originals on local disk, in a private GitHub Releases repository, or on any WebDAV server. Nimbus never locks your files behind its own cloud. |
 | **Built for media** | A Google Photos/Drive-style gallery with full-screen viewing, keyboard navigation, search, favorites, sorting and multi-select actions. |
 | **Instant tabs** | Photos, Videos and Files are cached, prefetched and revalidated in the background. Scroll positions are restored per view, and the content grid is the only thing that scrolls. |
-| **Fast previews and streaming** | Sharp generates WebP thumbnails. Originals stream with byte ranges, `HEAD`, ETags and cache-friendly headers, so large videos seek without loading the whole file. |
+| **Fast previews and streaming** | Sharp generates WebP thumbnails. The viewer paints the thumbnail first, then upgrades to the original. Originals stream with byte ranges, `HEAD`, ETags and cache-friendly headers, so large videos seek without loading the whole file. |
 | **Large files on GitHub** | Files above 1 GiB are split into 1 GiB release assets and stitched back together transparently for previews, downloads and range requests. |
 | **Smart encrypted cache** | Remote files are cached after first access, encrypted at rest with AES-256-GCM, limited by size, and evicted least-recently-used. Pin files for offline use. |
 | **Durable uploads** | Uploads are staged to disk and stored by a background queue with retries. Once the browser finishes sending, the upload continues even if the tab closes. |
 | **Private by default** | scrypt passwords, DB-backed sessions, HttpOnly cookies, a CSRF header on mutations, a strict CSP, and encrypted provider credentials. No telemetry. |
-| **Windows app included** | The same server and UI in a frameless Electron window, with Discord Rich Presence, offline password reset, folder/log shortcuts, diagnostics and a cleanup-aware uninstaller. |
+| **Windows app included** | The same server and UI in a frameless Electron window, with a tray lifecycle, start-with-Windows support, native upload notifications, keyboard shortcuts, Discord Rich Presence, offline password reset, folder/log shortcuts, diagnostics and a cleanup-aware uninstaller. |
 | **One process, one database** | Node 24, Fastify 5 and built-in `node:sqlite`. No Redis, no Postgres, no separate worker, no build tooling in production. |
 
-## What's new in 1.1
+## What's new in 1.2
 
-- **Discord Rich Presence, ready out of the box** — a bundled public Application ID, enabled by
-  default, with a privacy toggle for file names.
-- **Optional desktop shortcut** — the installer now includes a checked-by-default shortcut
-  option while always creating the Start menu entry.
-- **Guided uninstall cleanup** — choose separately whether to keep local data, remove Nimbus
-  GitHub releases/assets, or delete the whole GitHub repository.
-- **Desktop recovery tools** — reset the password offline, open the data or logs folder,
-  recreate a shortcut, or copy diagnostics without touching a terminal.
-- **Scrolling and sidebar fix** — the library grid now owns mouse-wheel scrolling and the left
-  navigation stays anchored below the desktop titlebar.
-- **GitHub chunking corrected** — files above 1 GiB are split into exact 1 GiB parts across
-  release assets.
+- **Liquid Glass, on by default** — translucent surfaces, an aurora backdrop and softer
+  motion across the library, viewer, dialogs and settings. Prefer the original look? Turn off
+  **Liquid Glass interface** in Settings → General; the choice is remembered per device.
+  Reduced-motion, reduced-transparency and forced-colors preferences are respected.
+- **Tray-first desktop** — closing the window now keeps Nimbus and any running uploads alive
+  in the notification area. Right-click the tray icon to open Nimbus, upload files, open
+  settings, toggle startup behavior, or **Quit Nimbus**. The first close shows a one-time hint.
+- **Start with Windows and native notifications** — launch quietly into the tray at sign-in,
+  and get a Windows notification when uploads finish while the window is hidden, minimized or
+  unfocused. Both are opt-out in **Settings → Desktop & Discord → Window & notifications**.
+- **Keyboard quality of life** — press `?` for the shortcut sheet, `Ctrl+K` or `/` to search,
+  `G` then `A`/`P`/`V`/`D`/`F`/`T` to jump between sections, arrow keys to move through the
+  grid, and `F`/`I`/`D`/`Delete` in the viewer. A small HUD shows armed section chords.
+- **Faster full-image previews** — the viewer paints the thumbnail first and upgrades to the
+  original in the background, with limited prefetching instead of downloading every full-size
+  neighbour.
+- **New cloud artwork** — the Liquid Glass cloud now drives the installer, app icon, tray
+  glyph, favicon and release banner, with a white variant for dark surfaces.
+- **Stability and accessibility fixes** — tighter upload settling, clearer focus rings, and
+  layout fixes for small windows, dialogs and the new desktop controls.
 
 ## How it works
 
@@ -98,7 +118,7 @@ Browser ──HTTPS──> Nimbus (Fastify + SQLite)
 - [Download](#download)
 - [A look inside](#a-look-inside)
 - [Why Nimbus](#why-nimbus)
-- [What's new in 1.1](#whats-new-in-11)
+- [What's new in 1.2](#whats-new-in-12)
 - [Features](#features)
 - [Requirements](#requirements)
 - [Quick start](#quick-start)
@@ -135,7 +155,8 @@ Browser ──HTTPS──> Nimbus (Fastify + SQLite)
   background, and prefetched, so Photos, Videos and Files switch without skeleton flicker or
   an empty flash. Scroll positions are restored per tab.
 - **Fast previews.** Photos are thumbnailed with Sharp into WebP (max 1120 × 1120, EXIF
-  orientation applied). Videos use a poster captured by the browser.
+  orientation applied). Videos use a poster captured by the browser. The viewer shows the
+  cached thumbnail immediately and fetches the original in the background.
 - **Streaming originals.** Byte-range requests, `HEAD`, ETags and cache-friendly headers, so
   video seeking and large downloads work without loading a whole file into memory.
 - **Large files on GitHub.** Files larger than 1 GiB are split into 1 GiB release assets and
@@ -153,12 +174,17 @@ Browser ──HTTPS──> Nimbus (Fastify + SQLite)
   rate limiting, and a progress screen while Nimbus wipes local data and known cloud assets.
   Optionally delete the whole GitHub repository too.
 - **Optional desktop app.** A frameless Windows app with its own titlebar, local server,
-  an installer with an optional desktop shortcut, folder/log shortcuts, diagnostics, and
+  close-to-tray behavior, start-with-Windows support, native upload notifications, an
+  installer with an optional desktop shortcut, folder/log shortcuts, diagnostics, and
   toggleable Discord Rich Presence that works out of the box.
+- **Keyboard-first browsing.** Press `?` for the shortcut sheet, jump between sections with
+  `G` chords, move through the grid with arrow keys, and favorite, inspect or delete from the
+  viewer without reaching for the mouse.
 - **You stay in control of removal.** The uninstaller asks separately whether to keep the local
   library, delete Nimbus GitHub releases/assets, or delete the whole GitHub repository.
-- **Polished UI.** Light/dark/system themes, responsive layout, upload tray, toasts, trash with
-  30-day automatic purge, onboarding, settings and password management.
+- **Polished UI.** Liquid Glass by default with a Classic fallback, light/dark/system themes,
+  responsive layout, upload tray, toasts, trash with 30-day automatic purge, onboarding,
+  settings and password management.
 - **One process, one database.** Node 24 + Fastify 5 + built-in `node:sqlite`. No Redis, no
   Postgres, no separate worker, no build tooling in production.
 
@@ -508,7 +534,7 @@ npm ci
 npm run desktop:dist      # NSIS installer in release/
 ```
 
-The installer is written to `release/Nimbus-Setup-1.1.0.exe` (the version comes from
+The installer is written to `release/Nimbus-Setup-1.2.0.exe` (the version comes from
 `package.json`). Run it, choose a folder, and decide whether to add a desktop shortcut. The
 desktop-shortcut option is checked by default; the Start menu entry is always created. Launch
 **Nimbus** from either place. Windows SmartScreen may warn about an unsigned installer; choose
@@ -531,14 +557,35 @@ Sharp's native binaries and `node:sqlite` are loaded from the real application d
 
 - Library data: `%APPDATA%\nimbus-vault\library` (database, keys, local originals, cache).
 - Logs: `%APPDATA%\nimbus-vault\logs\server.log`.
+- Desktop preferences: `%APPDATA%\nimbus-vault\desktop-preferences.json` (close-to-tray,
+  start with Windows, upload notifications and the one-time tray hint).
 - Discord settings: `%APPDATA%\nimbus-vault\discord.json`.
 - Overrides: `NIMBUS_DATA_DIR` and `NIMBUS_PORT`. The app otherwise reserves a free loopback
   port and opens `http://127.0.0.1:<port>` internally; it does not expose the server to the
   network.
 
-Closing the window stops the local server. The app keeps a single instance, denies browser
-permission requests, blocks in-app navigation to other origins and opens external links in
-your default browser. Upgrading with a newer installer keeps the data directory.
+With **Keep running in the notification area** enabled (the default), closing the window
+hides it and leaves the local server and upload queue running. Choose **Quit Nimbus** from the
+tray menu to stop them. With the option disabled, closing the window quits Nimbus and stops
+the server. The app keeps a single instance, denies browser permission requests, blocks in-app
+navigation to other origins and opens external links in your default browser. Upgrading with a
+newer installer keeps the data directory.
+
+### Tray, startup and notifications
+
+The tray menu exposes **Open Nimbus**, **Upload files…**, **Settings…**, the close-to-tray and
+start-with-Windows toggles, and **Quit Nimbus**. The same options live in
+**Settings → Desktop & Discord → Window & notifications**:
+
+- **Keep running in the notification area** — the close button hides the window instead of
+  stopping the server. The first close shows a one-time hint explaining how to reopen or quit.
+- **Start with Windows** — registers a per-user startup entry and launches Nimbus quietly in
+  the tray when you sign in, ready to finish uploads.
+- **Notify me when uploads finish** — shows a native Windows notification only while the
+  window is hidden, minimized or unfocused. Focused windows keep using the in-app toasts.
+
+Notifications are local to the desktop app. The browser build keeps its normal in-app
+notifications, and web push is not used.
 
 If the server cannot start, the app shows an error with the log path. The most common causes
 are a missing build (`npm run build` first when developing) and another process holding the
@@ -862,7 +909,7 @@ Health check (unauthenticated):
 
 ```bash
 curl -fsS http://127.0.0.1:8787/api/health
-# {"ok":true,"version":"1.1.0","uptime":123}
+# {"ok":true,"version":"1.2.0","uptime":123}
 ```
 
 Logs go to stdout/stderr. Set `LOG_LEVEL=info` (default) or `debug` for more detail. Nimbus
@@ -983,22 +1030,26 @@ desktop/
 shared/
   types.ts            DTOs shared by server and client
 public/
-  favicon.svg         app icon source
+  nimbus-icon.png     generated browser tab and touch icon
   nimbus-banner.svg   banner artwork source
   theme-init.js       CSP-safe pre-paint theme
 build/
   installer.nsh       installer shortcut page and uninstaller data choices
+  updated_v1_2_0_icon_blue.png   primary 1.2.0 artwork master
+  updated_v1_2_0_icon_white.png  alternate 1.2.0 artwork master
   icon.ico            generated multi-size Windows icon
   icon.png            generated 512 px app icon
   icon-256.png        generated store/documentation icon
   icon-512.png        generated store/documentation icon
   icon-1024.png       generated store/documentation icon
+  icon-white-256.png  generated white alternate
+  tray.png            generated Windows tray glyph
   banner-1280x640.png generated release banner
   banner-2560x1280.png generated high-resolution banner
 test/                 node:test suites (utilities, database, cache, crypto, GitHub shards)
 scripts/
   dev.mjs             development server launcher
-  make-icon.mjs       generates icons and banners from the SVG sources
+  make-icon.mjs       generates the icon, tray glyph, favicon and banners from the master artwork
   reset-password.mjs  offline password reset
 dist/                 production build output (generated)
 release/              desktop installer output (generated)
@@ -1018,7 +1069,7 @@ CREDITS.md            project credits
 | `npm run typecheck` | TypeScript check without emitting files. |
 | `npm test` | Run the automated test suite. |
 | `npm run reset-password` | Reset the owner password offline and sign out all sessions. |
-| `npm run desktop:icon` | Regenerate the Windows icons and banner artwork from the SVGs in `public/`. |
+| `npm run desktop:icon` | Regenerate the Windows icon, tray glyph, favicon and banner artwork from the master artwork in `build/`. |
 | `npm run desktop:dev` | Build and launch the Electron desktop app. |
 | `npm run desktop:pack` | Build an unpacked desktop app in `release/win-unpacked`. |
 | `npm run desktop:dist` | Build the Windows NSIS installer. |

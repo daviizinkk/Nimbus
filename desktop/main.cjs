@@ -1,8 +1,28 @@
 'use strict';
 
-const { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeTheme, session, shell } = require('electron');
+const {
+  app,
+  BrowserWindow,
+  clipboard,
+  dialog,
+  ipcMain,
+  Menu,
+  nativeImage,
+  nativeTheme,
+  Notification,
+  session,
+  shell,
+  Tray,
+} = require('electron');
 const { spawn } = require('node:child_process');
-const { createWriteStream, existsSync, mkdirSync, writeFileSync } = require('node:fs');
+const {
+  createWriteStream,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  writeFileSync,
+} = require('node:fs');
 const http = require('node:http');
 const net = require('node:net');
 const path = require('node:path');
@@ -10,6 +30,16 @@ const { DiscordPresence } = require('./discord.cjs');
 const { resetPassword } = require('./password-reset.cjs');
 
 const APP_ID = 'com.nimbus.vault';
+const DEFAULT_PREFERENCES = {
+  /** Closing the window keeps Nimbus (and uploads) alive in the notification area. */
+  closeToTray: true,
+  /** Start Nimbus with Windows, minimised to the tray. */
+  launchAtLogin: false,
+  /** Native notifications when uploads finish while the window is hidden. */
+  notifications: true,
+  /** One-time hint shown the first time the window is sent to the tray. */
+  trayHintShown: false,
+};
 
 let mainWindow = null;
 let serverProcess = null;
@@ -17,6 +47,8 @@ let serverLog = null;
 let serverUrl = null;
 let quitting = false;
 let presence = null;
+let tray = null;
+let preferences = { ...DEFAULT_PREFERENCES };
 
 /**
  * Logging must never be able to crash the app or recurse. When the desktop app
@@ -48,6 +80,197 @@ function userDataDirectory() {
 
 function logsDirectory() {
   return path.join(app.getPath('userData'), 'logs');
+}
+
+function preferencesFile() {
+  return path.join(app.getPath('userData'), 'desktop-preferences.json');
+}
+
+function sanitisePreferences(input) {
+  const next = { ...DEFAULT_PREFERENCES };
+  if (input && typeof input === 'object') {
+    if (typeof input.closeToTray === 'boolean') next.closeToTray = input.closeToTray;
+    if (typeof input.launchAtLogin === 'boolean') next.launchAtLogin = input.launchAtLogin;
+    if (typeof input.notifications === 'boolean') next.notifications = input.notifications;
+    if (typeof input.trayHintShown === 'boolean') next.trayHintShown = input.trayHintShown;
+  }
+  return next;
+}
+
+function loadPreferences() {
+  try {
+    preferences = sanitisePreferences(JSON.parse(readFileSync(preferencesFile(), 'utf8')));
+  } catch {
+    // A missing or damaged file simply means first-run defaults.
+    preferences = { ...DEFAULT_PREFERENCES };
+  }
+  return preferences;
+}
+
+function savePreferences(patch) {
+  preferences = sanitisePreferences({ ...preferences, ...patch });
+  try {
+    mkdirSync(app.getPath('userData'), { recursive: true });
+    const target = preferencesFile();
+    const temporary = `${target}.tmp`;
+    writeFileSync(temporary, `${JSON.stringify(preferences, null, 2)}\n`, 'utf8');
+    renameSync(temporary, target);
+  } catch (error) {
+    log(`could not save desktop preferences: ${error.message}`);
+  }
+  return preferences;
+}
+
+function publicPreferences() {
+  return {
+    closeToTray: preferences.closeToTray,
+    launchAtLogin: preferences.launchAtLogin,
+    notifications: preferences.notifications,
+  };
+}
+
+function applyLoginItemSetting() {
+  try {
+    const args = app.isPackaged ? ['--tray'] : [app.getAppPath(), '--tray'];
+    app.setLoginItemSettings({
+      openAtLogin: preferences.launchAtLogin,
+      openAsHidden: preferences.launchAtLogin,
+      path: process.execPath,
+      args: preferences.launchAtLogin ? args : [],
+    });
+  } catch (error) {
+    log(`could not update the Windows startup entry: ${error.message}`);
+  }
+}
+
+function appIconPath() {
+  const icon = path.join(app.getAppPath(), 'build', 'icon.png');
+  return existsSync(icon) ? icon : undefined;
+}
+
+function notificationIconPath() {
+  const icon = path.join(app.getAppPath(), 'build', 'icon-256.png');
+  return existsSync(icon) ? icon : appIconPath();
+}
+
+function trayIconPath() {
+  const icon = path.join(app.getAppPath(), 'build', 'tray.png');
+  return existsSync(icon) ? icon : notificationIconPath();
+}
+
+function showWindow() {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    if (serverUrl) createWindow();
+    return;
+  }
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+}
+
+function sendCommand(command) {
+  showWindow();
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('desktop:command', command);
+  }
+}
+
+function showNotification(title, body) {
+  if (!Notification.isSupported()) return false;
+  try {
+    const icon = notificationIconPath();
+    const notification = new Notification({
+      title,
+      body,
+      ...(icon ? { icon } : {}),
+      silent: false,
+      timeoutType: 'default',
+    });
+    notification.on('click', () => showWindow());
+    notification.show();
+    return true;
+  } catch (error) {
+    log(`could not show a notification: ${error.message}`);
+    return false;
+  }
+}
+
+function windowIsInBackground() {
+  if (!mainWindow || mainWindow.isDestroyed()) return true;
+  return !mainWindow.isVisible() || mainWindow.isMinimized() || !mainWindow.isFocused();
+}
+
+function buildTrayMenu() {
+  return Menu.buildFromTemplate([
+    { label: 'Open Nimbus', click: () => showWindow() },
+    { label: 'Upload files…', click: () => sendCommand('upload') },
+    { label: 'Settings…', click: () => sendCommand('settings') },
+    { type: 'separator' },
+    {
+      label: 'Keep running when the window closes',
+      type: 'checkbox',
+      checked: preferences.closeToTray,
+      click: (item) => {
+        savePreferences({ closeToTray: item.checked });
+        buildTray();
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('desktop:preferences', publicPreferences());
+        }
+      },
+    },
+    {
+      label: 'Start with Windows',
+      type: 'checkbox',
+      checked: preferences.launchAtLogin,
+      click: (item) => {
+        savePreferences({ launchAtLogin: item.checked });
+        applyLoginItemSetting();
+        buildTray();
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('desktop:preferences', publicPreferences());
+        }
+      },
+    },
+    { type: 'separator' },
+    {
+      label: 'Quit Nimbus',
+      click: () => {
+        quitting = true;
+        app.quit();
+      },
+    },
+  ]);
+}
+
+function buildTray() {
+  if (!app.isReady()) return;
+  const icon = trayIconPath();
+  if (!tray && !icon) return;
+  if (!tray) {
+    tray = new Tray(nativeImage.createFromPath(icon).resize({ width: 16, height: 16 }));
+    tray.setToolTip('Nimbus — your private library');
+    tray.on('click', () => {
+      if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible() && !mainWindow.isMinimized()) {
+        mainWindow.focus();
+      } else {
+        showWindow();
+      }
+    });
+    tray.on('double-click', () => showWindow());
+  }
+  tray.setContextMenu(buildTrayMenu());
+}
+
+function hideToTray() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  mainWindow.hide();
+  if (!preferences.trayHintShown) {
+    savePreferences({ trayHintShown: true });
+    showNotification(
+      'Nimbus is still running',
+      'Uploads keep going in the background. Open the tray menu to reopen or quit Nimbus.',
+    );
+  }
 }
 
 function uninstallerFile() {
@@ -240,9 +463,16 @@ function createWindow() {
     },
   });
 
-  mainWindow.once('ready-to-show', () => mainWindow?.show());
+  mainWindow.once('ready-to-show', () => {
+    if (!process.argv.includes('--tray')) mainWindow?.show();
+  });
   mainWindow.on('maximize', sendMaximised);
   mainWindow.on('unmaximize', sendMaximised);
+  mainWindow.on('close', (event) => {
+    if (quitting || !preferences.closeToTray) return;
+    event.preventDefault();
+    hideToTray();
+  });
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
@@ -299,6 +529,69 @@ function registerIpc() {
   });
   ipcMain.on('desktop:close', (event) => {
     BrowserWindow.fromWebContents(event.sender)?.close();
+  });
+  ipcMain.on('desktop:hide-to-tray', (event) => {
+    const window = BrowserWindow.fromWebContents(event.sender);
+    if (window) window.hide();
+  });
+  ipcMain.handle('desktop:preferences:get', () => publicPreferences());
+  ipcMain.handle('desktop:preferences:save', (event, input) => {
+    if (!input || typeof input !== 'object') {
+      return { ok: false, error: 'Desktop preferences must be an object.' };
+    }
+    const patch = {};
+    for (const key of ['closeToTray', 'launchAtLogin', 'notifications']) {
+      if (typeof input[key] !== 'boolean') {
+        return { ok: false, error: `Invalid desktop preference: ${key}.` };
+      }
+      patch[key] = input[key];
+    }
+    savePreferences(patch);
+    applyLoginItemSetting();
+    buildTray();
+    if (event.sender && !event.sender.isDestroyed()) {
+      event.sender.send('desktop:preferences', publicPreferences());
+    }
+    return { ok: true, preferences: publicPreferences() };
+  });
+  ipcMain.handle('desktop:notify-upload', (_event, payload) => {
+    if (!preferences.notifications) return { shown: false, reason: 'disabled' };
+    if (!Notification.isSupported()) return { shown: false, reason: 'unsupported' };
+    if (!windowIsInBackground()) return { shown: false, reason: 'focused' };
+    const rawCount = Number(payload?.count);
+    const count = Number.isFinite(rawCount) ? Math.min(Math.max(Math.round(rawCount), 1), 10_000) : 1;
+    const rawFailed = Number(payload?.failed);
+    const failed = Number.isFinite(rawFailed) ? Math.min(Math.max(Math.round(rawFailed), 0), count) : 0;
+    const names = Array.isArray(payload?.names)
+      ? payload.names
+          .filter((name) => typeof name === 'string' && name.trim())
+          .map((name) => name.trim().replace(/[\r\n]+/g, ' ').slice(0, 90))
+          .slice(0, 3)
+      : [];
+    const succeeded = Math.max(0, count - failed);
+    const title =
+      failed > 0
+        ? failed === count
+          ? 'Upload failed'
+          : 'Uploads finished with errors'
+        : succeeded === 1
+          ? 'Upload complete'
+          : `${succeeded} uploads complete`;
+    const body = (() => {
+      if (succeeded === 1 && failed === 0) {
+        return names[0] ? `“${names[0]}” is ready in your library.` : 'Your file is ready in the library.';
+      }
+      if (failed > 0 && succeeded === 0) {
+        return `${failed} ${failed === 1 ? 'upload needs' : 'uploads need'} attention. Open Nimbus to retry.`;
+      }
+      if (failed > 0) {
+        return `${succeeded} saved to your library · ${failed} failed. Open Nimbus for details.`;
+      }
+      return names.length > 0
+        ? `${succeeded} files saved, including ${names.slice(0, 2).map((name) => `“${name}”`).join(' and ')}.`
+        : `${succeeded} files saved to your library.`;
+    })();
+    return { shown: showNotification(title, body) };
   });
   ipcMain.handle('desktop:is-maximized', (event) => {
     return BrowserWindow.fromWebContents(event.sender)?.isMaximized() ?? false;
@@ -381,7 +674,10 @@ async function boot() {
   Menu.setApplicationMenu(null);
   app.setAppUserModelId(APP_ID);
   installSecurityPolicies();
+  loadPreferences();
+  applyLoginItemSetting();
   registerIpc();
+  buildTray();
 
   const logDir = path.join(app.getPath('userData'), 'logs');
   mkdirSync(logDir, { recursive: true });
@@ -414,9 +710,7 @@ if (!gotLock) {
   app.quit();
 } else {
   app.on('second-instance', () => {
-    if (!mainWindow) return;
-    if (mainWindow.isMinimized()) mainWindow.restore();
-    mainWindow.focus();
+    showWindow();
   });
 
   app.whenReady().then(boot).catch((error) => {
@@ -428,10 +722,22 @@ if (!gotLock) {
     app.quit();
   });
 
-  app.on('window-all-closed', () => app.quit());
+  app.on('activate', () => showWindow());
+
+  app.on('window-all-closed', () => {
+    // With close-to-tray enabled the window is hidden rather than destroyed, so
+    // this only runs if the renderer crashed or the user disabled the tray.
+    if (!preferences.closeToTray) app.quit();
+  });
 
   app.on('before-quit', () => {
     quitting = true;
+    try {
+      tray?.destroy();
+    } catch {
+      // Ignore.
+    }
+    tray = null;
     const logStream = serverLog;
     serverLog = null;
     try {

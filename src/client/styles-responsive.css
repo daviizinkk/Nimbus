@@ -698,6 +698,30 @@
 
 /* Touch / no-hover affordances ------------------------------------------- */
 
+@media (max-width: 720px) {
+  .shortcuts-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .chord-hud {
+    bottom: 18px;
+    max-width: calc(100vw - 32px);
+    overflow-x: auto;
+    padding: 9px 13px;
+  }
+}
+
+@media (max-width: 560px) {
+  .desktop-preference-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .desktop-preference-actions .btn {
+    justify-content: center;
+  }
+}
+
 @media (hover: none) {
   .media-shade {
     opacity: 0.55;

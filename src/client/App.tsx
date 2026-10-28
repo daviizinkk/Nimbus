@@ -18,6 +18,7 @@ import {
   useDebouncedValue,
   useDocumentTitle,
   useHashSection,
+  useInterfaceStyle,
   useTheme,
 } from './hooks';
 import type { Section } from './hooks';
@@ -30,6 +31,7 @@ import { Viewer } from './components/Viewer';
 import { SettingsModal, type SettingsTab } from './components/SettingsModal';
 import { UploadTray } from './components/UploadTray';
 import { FolderNameDialog, MoveDialog } from './components/Folders';
+import { ShortcutsDialog } from './components/ShortcutsDialog';
 import { Toasts, useToasts } from './components/Toasts';
 import { ConfirmDialog, Logo } from './components/ui';
 
@@ -123,7 +125,10 @@ export default function App() {
   const [emptyTrashOpen, setEmptyTrashOpen] = useState(false);
   const [emptyTrashBusy, setEmptyTrashBusy] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [chordArmed, setChordArmed] = useState(false);
   const { theme, resolved, setTheme } = useTheme();
+  const [uiStyle, setUiStyle] = useInterfaceStyle();
   const { toasts, notify, dismiss } = useToasts();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const contentRef = useRef<HTMLElement>(null);
@@ -138,6 +143,9 @@ export default function App() {
   const currentKeyRef = useRef('');
   const viewedRef = useRef(false);
   const deletionStartedRef = useRef(false);
+  const uploadSessionRef = useRef(false);
+  const chordArmedRef = useRef(false);
+  const chordTimerRef = useRef<number | null>(null);
 
   const authenticated = Boolean(status?.authenticated);
   const folderView = effectiveSection === 'files' && !query;
@@ -473,22 +481,71 @@ export default function App() {
     return () => window.clearInterval(timer);
   }, [authenticated, pending, refresh]);
 
+  // Native upload notifications. The desktop main process decides whether the
+  // window is actually out of the way, so toasts stay in charge while Nimbus is
+  // focused and Windows notifications take over in the tray.
   useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      const modalOpen = Boolean(document.querySelector('.modal-backdrop'));
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
-        if (!authenticated || modalOpen) return;
-        event.preventDefault();
-        document.getElementById('nimbus-search')?.focus();
+    if (!desktop) return;
+    const bridge = desktop;
+    let settleTimer: number | null = null;
+    const unsubscribe = uploadManager.subscribe(() => {
+      const tasks = uploadManager.getSnapshot();
+      const running = tasks.some(
+        (task) =>
+          task.phase === 'preparing' ||
+          task.phase === 'uploading' ||
+          task.phase === 'poster' ||
+          task.phase === 'finishing' ||
+          task.phase === 'processing',
+      );
+      if (running) {
+        uploadSessionRef.current = true;
+        if (settleTimer !== null) {
+          window.clearTimeout(settleTimer);
+          settleTimer = null;
+        }
+        return;
       }
-      if (event.key === 'Escape' && selectionMode && !modalOpen && !viewerId) {
-        setSelection(new Set());
-        setSelectionMode(false);
-      }
+      if (!uploadSessionRef.current) return;
+      uploadSessionRef.current = false;
+      settleTimer = window.setTimeout(() => {
+        settleTimer = null;
+        const finished = uploadManager
+          .getSnapshot()
+          .filter((task) => task.phase === 'done' || task.phase === 'error');
+        if (finished.length === 0) return;
+        const failed = finished.filter((task) => task.phase === 'error').length;
+        void bridge
+          .notifyUpload({
+            count: finished.length,
+            failed,
+            names: finished
+              .filter((task) => task.phase === 'done')
+              .slice(0, 3)
+              .map((task) => task.name),
+          })
+          .catch(() => {});
+      }, 900);
+    });
+    return () => {
+      unsubscribe();
+      if (settleTimer !== null) window.clearTimeout(settleTimer);
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [authenticated, selectionMode, viewerId]);
+  }, []);
+
+  // Commands from the tray menu (Upload files… / Settings…) re-enter the
+  // renderer through this bridge once the window is visible again.
+  useEffect(() => {
+    if (!desktop) return;
+    return desktop.onCommand((command) => {
+      if (command === 'upload') {
+        fileInputRef.current?.click();
+      } else if (command === 'settings') {
+        setSettingsTab('desktop');
+        setSettingsOpen(true);
+      }
+    });
+  }, []);
 
   useEffect(() => {
     const was = viewedRef.current;
@@ -942,6 +999,185 @@ export default function App() {
 
   const selectionCount = selectedItems.length;
 
+  useEffect(() => {
+    const focusSearch = () => {
+      const input = document.getElementById('nimbus-search') as HTMLInputElement | null;
+      input?.focus();
+      input?.select();
+    };
+    const disarmChord = () => {
+      chordArmedRef.current = false;
+      setChordArmed(false);
+      if (chordTimerRef.current !== null) {
+        window.clearTimeout(chordTimerRef.current);
+        chordTimerRef.current = null;
+      }
+    };
+    const armChord = () => {
+      chordArmedRef.current = true;
+      setChordArmed(true);
+      if (chordTimerRef.current !== null) window.clearTimeout(chordTimerRef.current);
+      chordTimerRef.current = window.setTimeout(() => {
+        chordArmedRef.current = false;
+        setChordArmed(false);
+        chordTimerRef.current = null;
+      }, 1_600);
+    };
+
+    const onKey = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) return;
+      const target = event.target as HTMLElement | null;
+      const typing = Boolean(
+        target &&
+          (target.tagName === 'INPUT' ||
+            target.tagName === 'TEXTAREA' ||
+            target.tagName === 'SELECT' ||
+            target.isContentEditable),
+      );
+      const modalOpen = Boolean(document.querySelector('.modal-backdrop'));
+      const viewerOpen = Boolean(viewerId);
+      const mod = event.metaKey || event.ctrlKey;
+      if (!authenticated) return;
+
+      if (mod && event.key.toLowerCase() === 'k') {
+        if (viewerOpen) return;
+        event.preventDefault();
+        focusSearch();
+        return;
+      }
+
+      if (mod && event.key === ',') {
+        if (modalOpen) return;
+        event.preventDefault();
+        setSettingsTab('general');
+        setSettingsOpen(true);
+        return;
+      }
+
+      if (event.key === '?' && !typing) {
+        event.preventDefault();
+        setShortcutsOpen(true);
+        return;
+      }
+
+      if (modalOpen) return;
+
+      if (mod && event.key.toLowerCase() === 'u' && !viewerOpen) {
+        event.preventDefault();
+        fileInputRef.current?.click();
+        return;
+      }
+
+      if (event.key === '/' && !typing && !viewerOpen) {
+        event.preventDefault();
+        focusSearch();
+        return;
+      }
+
+      if (mod && event.key.toLowerCase() === 'a' && !typing && !viewerOpen) {
+        if (items.length === 0) return;
+        event.preventDefault();
+        selectAll();
+        return;
+      }
+
+      if (event.key === 'Escape') {
+        if (typing) {
+          target?.blur();
+          return;
+        }
+        if (viewerOpen) return; // The viewer owns Escape while it is open.
+        if (chordArmedRef.current) {
+          disarmChord();
+          return;
+        }
+        if (selectionMode) {
+          clearSelection();
+          return;
+        }
+        if (search) {
+          setSearch('');
+          return;
+        }
+        return;
+      }
+
+      if (typing || viewerOpen) return;
+
+      if (chordArmedRef.current) {
+        const destinations: Record<string, Section> = {
+          a: 'all',
+          p: 'photos',
+          v: 'videos',
+          d: 'files',
+          f: 'favorites',
+          t: 'trash',
+        };
+        const destination = destinations[event.key.toLowerCase()];
+        disarmChord();
+        if (destination) {
+          event.preventDefault();
+          navigate(destination);
+          setSearch('');
+          setFolderId(null);
+          setFolderPath([]);
+        }
+        return;
+      }
+
+      if (event.key.toLowerCase() === 'g' && !mod && !event.altKey) {
+        event.preventDefault();
+        armChord();
+        return;
+      }
+
+      if ((event.key === 'Delete' || event.key === 'Backspace') && selectedItems.length > 0) {
+        event.preventDefault();
+        if (section === 'trash') handleBatch('delete');
+        else handleBatch('trash');
+        return;
+      }
+
+      if (event.key.toLowerCase() === 'f' && !mod && !event.altKey) {
+        if (selectedItems.length === 1) {
+          event.preventDefault();
+          void toggleFavorite(selectedItems[0]);
+          return;
+        }
+        const focused = document.activeElement as HTMLElement | null;
+        const card = focused?.closest<HTMLElement>('.media-card');
+        const id = card?.dataset.itemId;
+        const item = id ? items.find((entry) => entry.id === id) : null;
+        if (item) {
+          event.preventDefault();
+          void toggleFavorite(item);
+        }
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [
+    authenticated,
+    handleBatch,
+    items,
+    navigate,
+    search,
+    section,
+    selectedItems,
+    selectionMode,
+    toggleFavorite,
+    viewerId,
+  ]);
+
+  useEffect(
+    () => () => {
+      if (chordTimerRef.current !== null) window.clearTimeout(chordTimerRef.current);
+    },
+    [],
+  );
+
   if (!status) {
     if (statusError) {
       return (
@@ -1026,6 +1262,7 @@ export default function App() {
           onSearchChange={setSearch}
           onMenu={() => setMobileNav(true)}
           onOpenSettings={() => openSettings('general')}
+          onOpenShortcuts={() => setShortcutsOpen(true)}
           onUpload={openFilePicker}
           selectionMode={selectionMode}
           onToggleSelection={toggleSelectionMode}
@@ -1105,8 +1342,11 @@ export default function App() {
           activeProvider={activeProvider}
           stats={stats}
           theme={theme}
+          uiStyle={uiStyle}
           initialTab={settingsTab}
           onThemeChange={setTheme}
+          onUiStyleChange={setUiStyle}
+          onOpenShortcuts={() => setShortcutsOpen(true)}
           onClose={() => setSettingsOpen(false)}
           onSettingsChanged={handleSettingsChanged}
           onCacheChanged={() => {
@@ -1242,6 +1482,20 @@ export default function App() {
               <UploadCloud size={14} /> Originals go to your cloud
             </span>
           </div>
+        </div>
+      ) : null}
+
+      <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+
+      {chordArmed ? (
+        <div className="chord-hud" role="status" aria-live="polite">
+          <span className="chord-hud-label">Go to</span>
+          <span><kbd>A</kbd> All</span>
+          <span><kbd>P</kbd> Photos</span>
+          <span><kbd>V</kbd> Videos</span>
+          <span><kbd>D</kbd> Files</span>
+          <span><kbd>F</kbd> Favorites</span>
+          <span><kbd>T</kbd> Trash</span>
         </div>
       ) : null}
 

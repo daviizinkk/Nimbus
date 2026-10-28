@@ -23,7 +23,7 @@ function boolEnv(name: string, fallback: boolean): boolean {
 const dataDir = path.resolve(process.env.DATA_DIR || 'data');
 
 export const config = {
-  version: '1.1.0',
+  version: '1.2.0',
   brand: 'Nimbus',
   env: process.env.NODE_ENV || 'development',
   isProduction: process.env.NODE_ENV === 'production',

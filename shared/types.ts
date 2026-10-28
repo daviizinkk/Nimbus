@@ -98,6 +98,34 @@ export interface DesktopInfo {
   canUninstall: boolean;
 }
 
+export interface DesktopPreferences {
+  /** Closing the window keeps the local server and uploads running in the tray. */
+  closeToTray: boolean;
+  /** Nimbus starts with Windows, hidden in the notification area. */
+  launchAtLogin: boolean;
+  /** Native notifications when uploads finish while the window is not focused. */
+  notifications: boolean;
+}
+
+export interface DesktopPreferencesResult {
+  ok: boolean;
+  preferences?: DesktopPreferences;
+  error?: string;
+}
+
+export interface DesktopUploadSummary {
+  count: number;
+  failed: number;
+  names: string[];
+}
+
+export interface DesktopNotificationResult {
+  shown: boolean;
+  reason?: 'disabled' | 'unsupported' | 'focused' | 'error';
+}
+
+export type DesktopCommand = 'upload' | 'settings';
+
 export interface DesktopActionResult {
   ok: boolean;
   error?: string;

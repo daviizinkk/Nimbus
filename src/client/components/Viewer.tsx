@@ -203,13 +203,28 @@ export function Viewer({
   }, [current.id, isText, ready]);
 
   useEffect(() => {
-    for (const neighbor of [prev, next]) {
-      if (neighbor && neighbor.kind === 'photo' && neighbor.status === 'ready') {
+    // Neighbouring *thumbnails* are tiny and make the next photo feel instant.
+    // The original is only warmed after the current image has decoded.
+    for (const neighbor of [next, prev]) {
+      if (neighbor && neighbor.hasThumb && (neighbor.kind === 'photo' || neighbor.kind === 'video')) {
         const image = new Image();
-        image.src = contentUrl(neighbor.id);
+        image.decoding = 'async';
+        image.src = thumbUrl(neighbor.id);
       }
     }
-  }, [prev, next]);
+  }, [next, prev]);
+
+  useEffect(() => {
+    if (!mediaLoaded || !ready || !isImage) return;
+    const neighbor = next?.kind === 'photo' ? next : prev?.kind === 'photo' ? prev : null;
+    if (!neighbor || neighbor.status !== 'ready') return;
+    const timer = window.setTimeout(() => {
+      const image = new Image();
+      image.decoding = 'async';
+      image.src = contentUrl(neighbor.id);
+    }, 900);
+    return () => window.clearTimeout(timer);
+  }, [isImage, mediaLoaded, next, prev, ready]);
 
   const navigateTo = useCallback(
     (target: ItemDTO | null) => {
@@ -218,33 +233,6 @@ export function Viewer({
     },
     [onNavigate],
   );
-
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
-      if (document.querySelector('.modal-backdrop')) return;
-      if (event.key === 'Escape') {
-        if (menuOpen) {
-          setMenuOpen(false);
-        } else if (infoOpen) {
-          setInfoOpen(false);
-        } else {
-          onClose();
-        }
-        return;
-      }
-      if (event.key === 'ArrowLeft') {
-        event.preventDefault();
-        navigateTo(prev);
-      } else if (event.key === 'ArrowRight') {
-        event.preventDefault();
-        navigateTo(next);
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [infoOpen, menuOpen, navigateTo, next, onClose, prev]);
 
   const toggleFavorite = async () => {
     if (busy) return;
@@ -366,6 +354,79 @@ export function Viewer({
   };
 
   const mediaErrorBlock = mediaFailed || current.status === 'error';
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
+      const target = event.target as HTMLElement | null;
+      if (
+        target &&
+        (/^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName) || target.isContentEditable)
+      ) {
+        return;
+      }
+      if (document.querySelector('.modal-backdrop')) return;
+      const key = event.key;
+      if (key === 'Escape') {
+        if (menuOpen) {
+          setMenuOpen(false);
+        } else if (infoOpen) {
+          setInfoOpen(false);
+        } else {
+          onClose();
+        }
+        return;
+      }
+      if (key === 'ArrowLeft') {
+        event.preventDefault();
+        navigateTo(prev);
+        return;
+      }
+      if (key === 'ArrowRight') {
+        event.preventDefault();
+        navigateTo(next);
+        return;
+      }
+      if (key.toLowerCase() === 'f' && !current.trashedAt) {
+        event.preventDefault();
+        void toggleFavorite();
+        return;
+      }
+      if (key.toLowerCase() === 'i') {
+        event.preventDefault();
+        setInfoOpen((value) => !value);
+        return;
+      }
+      if (key.toLowerCase() === 'd' && ready) {
+        event.preventDefault();
+        const link = document.createElement('a');
+        link.href = contentUrl(current.id, true);
+        link.download = current.name;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        return;
+      }
+      if ((key === 'Delete' || key === 'Backspace') && !current.trashedAt) {
+        event.preventDefault();
+        setTrashConfirm(true);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [
+    current.id,
+    current.name,
+    current.trashedAt,
+    infoOpen,
+    menuOpen,
+    navigateTo,
+    next,
+    onClose,
+    prev,
+    ready,
+    toggleFavorite,
+  ]);
 
   return (
     <div className="viewer" role="dialog" aria-modal="true" aria-label={`Viewing ${current.name}`}>
@@ -554,16 +615,31 @@ export function Viewer({
                   </a>
                 </div>
               ) : (
-                <img
-                  key={current.id}
-                  src={contentUrl(current.id)}
-                  alt={current.name}
-                  className={`viewer-photo${zoomed ? ' is-zoomed' : ''}${mediaLoaded ? ' is-loaded' : ''}`}
-                  onLoad={() => setMediaLoaded(true)}
-                  onError={() => setMediaFailed(true)}
-                  onDoubleClick={() => setZoomed((value) => !value)}
-                  draggable={false}
-                />
+                <>
+                  {current.hasThumb && !mediaLoaded ? (
+                    <img
+                      className="viewer-photo-preview"
+                      src={thumbUrl(current.id)}
+                      alt=""
+                      aria-hidden="true"
+                      decoding="async"
+                      draggable={false}
+                    />
+                  ) : null}
+                  <img
+                    key={current.id}
+                    src={contentUrl(current.id)}
+                    alt={current.name}
+                    className={`viewer-photo${zoomed ? ' is-zoomed' : ''}${mediaLoaded ? ' is-loaded' : ''}`}
+                    loading="eager"
+                    decoding="async"
+                    fetchPriority="high"
+                    onLoad={() => setMediaLoaded(true)}
+                    onError={() => setMediaFailed(true)}
+                    onDoubleClick={() => setZoomed((value) => !value)}
+                    draggable={false}
+                  />
+                </>
               )}
             </div>
           ) : isVideo ? (

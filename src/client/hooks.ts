@@ -3,9 +3,51 @@ import type { RefObject } from 'react';
 
 export type Section = 'all' | 'photos' | 'videos' | 'files' | 'favorites' | 'trash';
 export type ThemeMode = 'light' | 'dark' | 'system';
+export type InterfaceStyle = 'glass' | 'classic';
 
 const SECTIONS: Section[] = ['all', 'photos', 'videos', 'files', 'favorites', 'trash'];
 const THEME_KEY = 'nimbus-theme';
+const UI_STYLE_KEY = 'nimbus-ui-style';
+
+export function readInterfaceStyle(): InterfaceStyle {
+  try {
+    return window.localStorage.getItem(UI_STYLE_KEY) === 'classic' ? 'classic' : 'glass';
+  } catch {
+    return 'glass';
+  }
+}
+
+export function applyInterfaceStyle(style: InterfaceStyle): void {
+  document.documentElement.dataset.ui = style;
+  const glass = style === 'glass';
+  const dark = document.documentElement.dataset.theme === 'dark';
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) {
+    meta.setAttribute(
+      'content',
+      dark ? (glass ? '#070b16' : '#0b0d12') : glass ? '#eaf1fc' : '#f7f8fb',
+    );
+  }
+}
+
+export function useInterfaceStyle(): [InterfaceStyle, (style: InterfaceStyle) => void] {
+  const [style, setStyleState] = useState<InterfaceStyle>(() => readInterfaceStyle());
+
+  useEffect(() => {
+    applyInterfaceStyle(style);
+  }, [style]);
+
+  const setStyle = useCallback((next: InterfaceStyle) => {
+    try {
+      window.localStorage.setItem(UI_STYLE_KEY, next);
+    } catch {
+      // Private mode or a full quota: the in-memory choice still applies.
+    }
+    setStyleState(next);
+  }, []);
+
+  return [style, setStyle];
+}
 
 export function isSection(value: string): value is Section {
   return (SECTIONS as string[]).includes(value);
@@ -45,8 +87,14 @@ function applyTheme(mode: ThemeMode): void {
   const resolved = mode === 'system' ? systemTheme() : mode;
   document.documentElement.dataset.theme = resolved;
   document.documentElement.style.colorScheme = resolved;
+  const glass = document.documentElement.dataset.ui === 'glass';
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', resolved === 'dark' ? '#0b0d12' : '#f7f8fb');
+  if (meta) {
+    meta.setAttribute(
+      'content',
+      resolved === 'dark' ? (glass ? '#070b16' : '#0b0d12') : glass ? '#eaf1fc' : '#f7f8fb',
+    );
+  }
 }
 
 export function useTheme(): {

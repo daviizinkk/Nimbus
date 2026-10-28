@@ -7,6 +7,7 @@ import {
   Images,
   Film,
   Files,
+  Keyboard,
   LogOut,
   Menu,
   Monitor,
@@ -172,6 +173,7 @@ interface TopbarProps {
   onSearchChange: (value: string) => void;
   onMenu: () => void;
   onOpenSettings: () => void;
+  onOpenShortcuts: () => void;
   onUpload: () => void;
   selectionMode: boolean;
   onToggleSelection: () => void;
@@ -183,6 +185,7 @@ export function Topbar({
   onSearchChange,
   onMenu,
   onOpenSettings,
+  onOpenShortcuts,
   onUpload,
   selectionMode,
   onToggleSelection,
@@ -230,6 +233,15 @@ export function Topbar({
         ) : null}
         <button type="button" className="icon-btn icon-btn-md topbar-upload" onClick={onUpload} aria-label="Upload files">
           <Plus size={20} />
+        </button>
+        <button
+          type="button"
+          className="icon-btn icon-btn-md topbar-shortcuts"
+          onClick={onOpenShortcuts}
+          aria-label="Keyboard shortcuts"
+          title="Keyboard shortcuts (?)"
+        >
+          <Keyboard size={19} />
         </button>
         <button type="button" className="icon-btn icon-btn-md" onClick={onOpenSettings} aria-label="Settings">
           <Settings size={19} />

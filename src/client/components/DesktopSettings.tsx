@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   AlertCircle,
+  Bell,
   CheckCircle2,
   ClipboardCheck,
   ExternalLink,
@@ -9,7 +10,9 @@ import {
   Gamepad2,
   Laptop,
   MonitorDown,
+  Power,
   Radio,
+  Save,
   ShieldCheck,
   Trash2,
   Wrench,
@@ -18,6 +21,7 @@ import type {
   DesktopDiscordConfig,
   DesktopDiscordStatus,
   DesktopInfo,
+  DesktopPreferences,
 } from '../../../shared/types';
 import { desktop } from '../desktop';
 import { ConfirmDialog, Field, Spinner, Toggle } from './ui';
@@ -63,11 +67,20 @@ const TOOL_MESSAGES: Record<ToolAction, string> = {
   diagnostics: 'Diagnostics copied to the clipboard.',
 };
 
+const DEFAULT_PREFERENCES: DesktopPreferences = {
+  closeToTray: true,
+  launchAtLogin: false,
+  notifications: true,
+};
+
 export function DesktopSettings({ notify }: DesktopSettingsProps) {
   const [info, setInfo] = useState<DesktopInfo | null>(null);
   const [config, setConfig] = useState<DesktopDiscordConfig>(DEFAULT_CONFIG);
   const [saved, setSaved] = useState<DesktopDiscordConfig>(DEFAULT_CONFIG);
   const [status, setStatus] = useState<DesktopDiscordStatus>(OFF_STATUS);
+  const [preferences, setPreferences] = useState<DesktopPreferences>(DEFAULT_PREFERENCES);
+  const [savedPreferences, setSavedPreferences] = useState<DesktopPreferences>(DEFAULT_PREFERENCES);
+  const [preferencesBusy, setPreferencesBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toolBusy, setToolBusy] = useState<ToolAction | 'uninstall' | null>(null);
@@ -84,6 +97,14 @@ export function DesktopSettings({ notify }: DesktopSettingsProps) {
       .getInfo()
       .then((value) => {
         if (active) setInfo(value);
+      })
+      .catch(() => {});
+    void desktop
+      .getPreferences()
+      .then((value) => {
+        if (!active) return;
+        setPreferences(value);
+        setSavedPreferences(value);
       })
       .catch(() => {});
     void desktop.rpc
@@ -104,14 +125,51 @@ export function DesktopSettings({ notify }: DesktopSettingsProps) {
     const unsubscribe = desktop.rpc.onStatus((next) => {
       if (active) setStatus(next);
     });
+    const unsubscribePreferences = desktop.onPreferences((next) => {
+      if (!active) return;
+      setPreferences(next);
+      setSavedPreferences(next);
+    });
 
     return () => {
       active = false;
       unsubscribe?.();
+      unsubscribePreferences?.();
     };
   }, []);
 
   const dirty = useMemo(() => !sameConfig(config, saved), [config, saved]);
+  const preferencesDirty = useMemo(
+    () =>
+      preferences.closeToTray !== savedPreferences.closeToTray ||
+      preferences.launchAtLogin !== savedPreferences.launchAtLogin ||
+      preferences.notifications !== savedPreferences.notifications,
+    [preferences, savedPreferences],
+  );
+
+  const savePreferences = async () => {
+    if (!desktop || preferencesBusy) return;
+    setPreferencesBusy(true);
+    try {
+      const result = await desktop.savePreferences(preferences);
+      if (!result.ok || !result.preferences) {
+        notify(result.error ?? 'Could not save desktop preferences.', 'error');
+        return;
+      }
+      setPreferences(result.preferences);
+      setSavedPreferences(result.preferences);
+      notify(
+        result.preferences.closeToTray
+          ? 'Desktop preferences saved. Closing the window keeps Nimbus in the tray.'
+          : 'Desktop preferences saved. Closing the window now quits Nimbus.',
+        'success',
+      );
+    } catch (caught) {
+      notify(caught instanceof Error ? caught.message : 'Could not save desktop preferences.', 'error');
+    } finally {
+      setPreferencesBusy(false);
+    }
+  };
 
   const save = async () => {
     if (!desktop || saving) return;
@@ -217,8 +275,10 @@ export function DesktopSettings({ notify }: DesktopSettingsProps) {
           </span>
         </div>
         <p className="desktop-setting-copy">
-          The library runs locally and opens in its own window. Closing this window stops the local server
-          after Nimbus finishes saving its state.
+          The library runs locally and opens in its own window.{' '}
+          {preferences.closeToTray
+            ? 'Closing the window keeps Nimbus and any running uploads alive in the notification area. Use Quit Nimbus in the tray menu to stop the local server.'
+            : 'Closing the window quits Nimbus and stops the local server once state is saved.'}
         </p>
         {info ? (
           <p className="desktop-setting-copy desktop-path" title={info.dataDir}>
@@ -274,6 +334,62 @@ export function DesktopSettings({ notify }: DesktopSettingsProps) {
               <strong>Copy diagnostics</strong>
               <small>Version, paths and Discord status</small>
             </span>
+          </button>
+        </div>
+      </div>
+
+      <div className="settings-card">
+        <div className="settings-card-head">
+          <div className="desktop-setting-title">
+            <span className="desktop-setting-icon">
+              <Bell size={18} />
+            </span>
+            <div>
+              <h4>Window &amp; notifications</h4>
+              <p>Keep uploads moving when Nimbus is out of the way.</p>
+            </div>
+          </div>
+          <span className="desktop-setting-badge">
+            <Power size={14} /> Native
+          </span>
+        </div>
+
+        <div className="desktop-preference-list">
+          <Toggle
+            checked={preferences.closeToTray}
+            onChange={(checked) => setPreferences((current) => ({ ...current, closeToTray: checked }))}
+            label="Keep running in the notification area"
+            description="The close button hides the window instead of stopping the server. Right-click the tray icon to quit."
+            disabled={preferencesBusy}
+          />
+          <Toggle
+            checked={preferences.launchAtLogin}
+            onChange={(checked) => setPreferences((current) => ({ ...current, launchAtLogin: checked }))}
+            label="Start with Windows"
+            description="Nimbus opens quietly in the tray when you sign in, ready to finish uploads."
+            disabled={preferencesBusy}
+          />
+          <Toggle
+            checked={preferences.notifications}
+            onChange={(checked) => setPreferences((current) => ({ ...current, notifications: checked }))}
+            label="Notify me when uploads finish"
+            description="Shows a Windows notification when the window is hidden or in the background."
+            disabled={preferencesBusy}
+          />
+        </div>
+
+        <div className="desktop-preference-actions">
+          <span className="desktop-setting-note">
+            <ShieldCheck size={14} /> Preferences stay on this PC. No file names leave your machine.
+          </span>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => void savePreferences()}
+            disabled={!preferencesDirty || preferencesBusy}
+          >
+            {preferencesBusy ? <Spinner size={16} /> : <Save size={16} />}
+            {preferencesBusy ? 'Saving…' : 'Save preferences'}
           </button>
         </div>
       </div>

@@ -224,7 +224,7 @@
 
     <!-- Bottom accent -->
     <line x1="88" y1="550" x2="640" y2="550" stroke="#94a3b8" stroke-opacity=".14"/>
-    <text x="88" y="579" fill="#64748b" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="10" font-weight="600" letter-spacing="1.6">VERSION 1.1</text>
+    <text x="88" y="579" fill="#64748b" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="10" font-weight="600" letter-spacing="1.6">VERSION 1.2</text>
     <text x="640" y="579" text-anchor="end" fill="#64748b" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="10" font-weight="600" letter-spacing="1.1">YOUR MEMORIES. YOUR STORAGE.</text>
   </g>
 </svg>

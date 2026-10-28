@@ -233,7 +233,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
             </li>
           </ul>
         </div>
-        <p className="onboarding-foot">Nimbus 1.1 · Built for one owner: you.</p>
+        <p className="onboarding-foot">Nimbus 1.2 · Built for one owner: you.</p>
       </aside>
 
       <main className="onboarding-main">

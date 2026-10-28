@@ -101,6 +101,12 @@
   min-height: 0;
 }
 
+/* Full-screen overlays start below the custom titlebar so the window controls
+   stay reachable and the viewer header is never hidden behind it. */
+:root.nimbus-desktop .viewer {
+  top: 36px;
+}
+
 :root.nimbus-desktop .splash-screen,
 :root.nimbus-desktop .login-screen,
 :root.nimbus-desktop .onboarding,

@@ -1,6 +1,6 @@
 {
   "name": "nimbus-vault",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "type": "module",
   "description": "Nimbus — a private, self-hosted photo, video and file library backed by the cloud you already own.",
@@ -38,6 +38,8 @@
       "dist/**/*",
       "desktop/**/*",
       "build/icon.png",
+      "build/icon-256.png",
+      "build/tray.png",
       "package.json"
     ],
     "win": {

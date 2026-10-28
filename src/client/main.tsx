@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import { DesktopTitlebar } from './components/DesktopTitlebar';
 import { isDesktop } from './desktop';
+import { applyInterfaceStyle, readInterfaceStyle } from './hooks';
 import './styles.css';
 import './styles-gallery.css';
 import './styles-overlays.css';
@@ -12,6 +13,7 @@ import './styles-settings.css';
 import './styles-auth.css';
 import './styles-responsive.css';
 import './styles-desktop.css';
+import './styles-liquid-glass.css';
 
 const container = document.getElementById('root');
 if (!container) {
@@ -21,6 +23,10 @@ if (!container) {
 if (isDesktop) {
   document.documentElement.classList.add('nimbus-desktop');
 }
+
+// The Liquid Glass layer is opt-in through a data attribute so people who
+// prefer the original flat UI can switch back without a reload.
+applyInterfaceStyle(readInterfaceStyle());
 
 createRoot(container).render(
   <StrictMode>
