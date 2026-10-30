@@ -5,6 +5,7 @@ import type { Database } from './db.js';
 import type { UploadQueue } from './queue.js';
 import type { VaultSettings } from './settings.js';
 import type { StorageProvider } from './storage/index.js';
+import type { TelemetryService } from './telemetry.js';
 
 export interface AppContext {
   app: FastifyInstance;
@@ -13,5 +14,6 @@ export interface AppContext {
   auth: AuthService;
   cache: CacheManager;
   queue: UploadQueue;
+  telemetry: TelemetryService;
   getProvider: (provider: 'local' | 'github' | 'webdav') => StorageProvider;
 }

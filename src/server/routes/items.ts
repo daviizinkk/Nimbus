@@ -1,14 +1,10 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import type { ItemKind, ItemQuery, SortMode } from '../../../shared/types.js';
+import type { ItemQuery, SortMode } from '../../../shared/types.js';
 import type { AppContext } from '../context.js';
 import { purgeItem, trashItem } from '../items-service.js';
 import type { DbItem } from '../db.js';
-import {
-  ApiError,
-  contentDisposition,
-  parseRange,
-  safeFilename,
-} from '../utils.js';
+import { sendItemContent } from '../item-content.js';
+import { ApiError, safeFilename } from '../utils.js';
 
 const SECTIONS = new Set(['all', 'photos', 'videos', 'files', 'favorites', 'trash']);
 const SORTS = new Set(['newest', 'oldest', 'name', 'largest']);
@@ -25,35 +21,12 @@ function itemOr404(ctx: AppContext, id: string): DbItem {
   return item;
 }
 
-function parseLocator(raw: string | null): Record<string, unknown> {
-  if (!raw) throw new ApiError(409, 'This item has not finished uploading.');
-  try {
-    return JSON.parse(raw) as Record<string, unknown>;
-  } catch {
-    throw new ApiError(500, 'The stored file location is invalid.');
-  }
-}
-
-function isInlineSafe(mime: string): boolean {
-  return (
-    mime.startsWith('image/') ||
-    mime.startsWith('video/') ||
-    mime.startsWith('audio/') ||
-    mime === 'application/pdf'
-  );
-}
-
 function parseBatchIds(value: unknown): string[] {
   if (!Array.isArray(value)) throw new ApiError(400, 'Expected a list of item IDs.');
   const ids = [...new Set(value.filter((item): item is string => typeof item === 'string'))];
   if (ids.length === 0) throw new ApiError(400, 'No items selected.');
   if (ids.length > 500) throw new ApiError(400, 'You can act on at most 500 items at once.');
   return ids;
-}
-
-function discardStream(stream: NodeJS.ReadableStream): void {
-  const candidate = stream as NodeJS.ReadableStream & { destroy?: () => void };
-  candidate.destroy?.();
 }
 
 export function registerItemRoutes(ctx: AppContext): void {
@@ -242,85 +215,10 @@ export function registerItemRoutes(ctx: AppContext): void {
   const sendContent = async (request: FastifyRequest, reply: FastifyReply) => {
     const { id } = request.params as { id: string };
     const item = itemOr404(ctx, id);
-    if (item.status !== 'ready') throw new ApiError(409, 'This file is still being saved to the cloud.');
-
     const query = request.query as Record<string, unknown>;
-    const download = queryValue(query.download) === '1';
-    const range = parseRange(request.headers.range, item.size);
-    if (range === 'invalid') {
-      reply.header('content-range', `bytes */${item.size}`).header('accept-ranges', 'bytes');
-      throw new ApiError(416, 'Requested range is not available.');
-    }
-
-    const etag = `"${item.hash || item.id}"`;
-    if (!range && request.headers['if-none-match'] === etag) {
-      return reply.code(304).send();
-    }
-
-    let content: {
-      stream: NodeJS.ReadableStream;
-      size: number;
-      start: number;
-      end: number;
-      status: 200 | 206;
-      contentLength: number;
-    } | null = null;
-
-    if (item.provider !== 'local' && cache.isCached(item.id)) {
-      try {
-        content = await cache.openCached(item.id, range ?? undefined);
-        if (content.size !== item.size) {
-          await cache.invalidateBlob(item.id);
-          content = null;
-        }
-      } catch (error) {
-        console.warn(`[cache] failed to read cached file ${item.id}: ${(error as Error).message}`);
-        await cache.invalidateBlob(item.id);
-      }
-    }
-
-    if (!content) {
-      const provider = getProvider(item.provider);
-      const result = await provider.get(parseLocator(item.locator), range ?? undefined);
-      content = {
-        stream: result.stream,
-        size: result.size,
-        start: result.start,
-        end: result.end,
-        status: result.status,
-        contentLength: result.contentLength,
-      };
-      if (request.method !== 'HEAD' && item.provider !== 'local') {
-        try {
-          // Warm the local cache in the background while this response streams.
-          cache.maybeAutoCache(item);
-        } catch (error) {
-          request.log.warn({ err: error, item: item.id }, 'could not schedule auto-cache');
-        }
-      }
-    }
-
-    const inline = !download && isInlineSafe(item.mime);
-    const headers: Record<string, string> = {
-      'content-type': item.mime || 'application/octet-stream',
-      'content-length': String(content.contentLength),
-      'accept-ranges': 'bytes',
-      'content-disposition': contentDisposition(inline ? 'inline' : 'attachment', item.name),
-      'cache-control': download ? 'private, max-age=0, must-revalidate' : 'private, max-age=3600',
-      etag,
-    };
-    if (content.status === 206) {
-      headers['content-range'] = `bytes ${content.start}-${content.end}/${content.size}`;
-    }
-    if (item.mime === 'image/svg+xml') {
-      headers['content-security-policy'] = "default-src 'none'; style-src 'unsafe-inline'; sandbox";
-    }
-
-    if (request.method === 'HEAD' || content.contentLength === 0) {
-      discardStream(content.stream);
-      return reply.code(content.status).headers(headers).send();
-    }
-    return reply.code(content.status).headers(headers).send(content.stream);
+    return sendItemContent(ctx, request, reply, item, {
+      download: queryValue(query.download) === '1',
+    });
   };
 
   app.route({ method: ['GET', 'HEAD'], url: '/api/items/:id/content', handler: sendContent });

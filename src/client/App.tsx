@@ -131,6 +131,7 @@ export default function App() {
   const [uiStyle, setUiStyle] = useInterfaceStyle();
   const { toasts, notify, dismiss } = useToasts();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const contentRef = useRef<HTMLElement>(null);
   const itemsRef = useRef<ItemDTO[]>([]);
   const hasMoreRef = useRef(false);
@@ -144,6 +145,7 @@ export default function App() {
   const viewedRef = useRef(false);
   const deletionStartedRef = useRef(false);
   const uploadSessionRef = useRef(false);
+  const sharedHandledRef = useRef(false);
   const chordArmedRef = useRef(false);
   const chordTimerRef = useRef<number | null>(null);
 
@@ -428,6 +430,49 @@ export default function App() {
     if (authenticated) void loadStats();
   }, [authenticated, loadStats]);
 
+  // Android/iOS share-sheet handoff: the server ingests files, then redirects
+  // here with ?shared=<count>. Refresh the gallery and clear the marker.
+  useEffect(() => {
+    if (!authenticated || sharedHandledRef.current) return;
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has('shared')) return;
+    sharedHandledRef.current = true;
+    const marker = params.get('shared') ?? '';
+    const failed = Number.parseInt(params.get('shareFailed') ?? '0', 10);
+    params.delete('shared');
+    params.delete('shareFailed');
+    const search = params.toString();
+    window.history.replaceState(
+      null,
+      '',
+      `${window.location.pathname}${search ? `?${search}` : ''}${window.location.hash}`,
+    );
+
+    if (marker === 'signin') {
+      notify('Sign in first, then share files to Nimbus again.', 'info');
+      return;
+    }
+    if (marker === 'busy') {
+      notify('Nimbus is receiving too many shared files right now. Try again in a moment.', 'error');
+      return;
+    }
+    if (marker === 'error') {
+      notify('The share sheet could not send those files.', 'error');
+      return;
+    }
+    const count = Number.parseInt(marker, 10);
+    if (Number.isFinite(count) && count > 0) {
+      notify(
+        `${count} ${count === 1 ? 'file' : 'files'} shared to Nimbus${failed > 0 ? ` · ${failed} failed` : ''}.`,
+        failed > 0 ? 'info' : 'success',
+      );
+      void refresh().catch(() => {});
+      void loadStats();
+    } else if (Number.isFinite(count)) {
+      notify('No files were received from the share sheet.', 'error');
+    }
+  }, [authenticated, loadStats, notify, refresh]);
+
   useEffect(() => {
     if (!authenticated) return;
     let timer: number | null = null;
@@ -584,6 +629,11 @@ export default function App() {
   const openFilePicker = useCallback(() => {
     setMobileNav(false);
     fileInputRef.current?.click();
+  }, []);
+
+  const openCamera = useCallback(() => {
+    setMobileNav(false);
+    cameraInputRef.current?.click();
   }, []);
 
   const handleFiles = useCallback(
@@ -1213,7 +1263,10 @@ export default function App() {
   if (!status.onboarded) {
     return (
       <>
-        <Onboarding onComplete={(next) => setStatus(next)} />
+        <Onboarding
+          telemetryConfigured={status.telemetryConfigured}
+          onComplete={(next) => setStatus(next)}
+        />
         <Toasts toasts={toasts} onDismiss={dismiss} />
       </>
     );
@@ -1250,6 +1303,7 @@ export default function App() {
           setMobileNav(false);
         }}
         onUpload={openFilePicker}
+        onTakePhoto={openCamera}
         onOpenSettings={() => openSettings('general')}
         onLogout={() => void logout()}
         mobileOpen={mobileNav}
@@ -1264,6 +1318,7 @@ export default function App() {
           onOpenSettings={() => openSettings('general')}
           onOpenShortcuts={() => setShortcutsOpen(true)}
           onUpload={openFilePicker}
+          onTakePhoto={openCamera}
           selectionMode={selectionMode}
           onToggleSelection={toggleSelectionMode}
           showSelect={showSelect}
@@ -1458,6 +1513,19 @@ export default function App() {
         ref={fileInputRef}
         type="file"
         multiple
+        hidden
+        onChange={(event) => {
+          const files = Array.from(event.target.files ?? []);
+          event.target.value = '';
+          handleFiles(files);
+        }}
+      />
+
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
         hidden
         onChange={(event) => {
           const files = Array.from(event.target.files ?? []);

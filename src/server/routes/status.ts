@@ -19,6 +19,7 @@ function publicStatus(ctx: AppContext, authenticated: boolean): AppStatus {
     authenticated,
     vaultName: ctx.settings.vaultName,
     version: config.version,
+    telemetryConfigured: ctx.settings.telemetryConfigured,
   };
 }
 
@@ -85,11 +86,13 @@ export function registerStatusRoutes(ctx: AppContext): void {
     settings.vaultName = vaultName;
     settings.activeProvider = active;
     settings.passwordHash = await hashPassword(password);
+    settings.setTelemetryEnabled(body.telemetry === true);
 
     const token = auth.createSession(requestUserAgent(request));
     auth.setSessionCookie(request, reply, token);
     setupLimiter.reset(request.ip);
     db.pruneSessions();
+    if (body.telemetry === true) void ctx.telemetry.sendNow();
     return reply.code(201).send(publicStatus(ctx, true));
   });
 

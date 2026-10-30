@@ -188,11 +188,45 @@ export interface StorageView {
   webdav: WebdavStorageView;
 }
 
+export type ShareExpiry = 'never' | '1d' | '7d' | '30d' | '90d';
+
+export interface ShareDTO {
+  id: string;
+  itemId: string;
+  /** Full public link, including the unguessable token. */
+  url: string;
+  createdAt: number;
+  expiresAt: number | null;
+  revokedAt: number | null;
+  lastAccessAt: number | null;
+  accessCount: number;
+  active: boolean;
+}
+
+export interface ShareListResponse {
+  shares: ShareDTO[];
+}
+
+export interface TelemetryView {
+  /** Opt-in preference, off by default. */
+  enabled: boolean;
+  /** True when NIMBUS_TELEMETRY_URL is configured on the server. */
+  configured: boolean;
+  installId: string | null;
+  lastSentAt: number | null;
+  lastError: string | null;
+}
+
 export interface AppSettingsView {
   vaultName: string;
   version: string;
   storage: StorageView;
   cache: CacheStats;
+  telemetry: TelemetryView;
+  sharing: {
+    /** PUBLIC_URL from the environment, when configured. */
+    publicUrl: string;
+  };
 }
 
 export interface AppStatus {
@@ -200,11 +234,15 @@ export interface AppStatus {
   authenticated: boolean;
   vaultName: string;
   version: string;
+  /** Anonymous stats need an endpoint before anything can be sent. */
+  telemetryConfigured: boolean;
 }
 
 export interface SetupRequest {
   vaultName: string;
   password: string;
+  /** Opt-in anonymous usage statistics. Off by default. */
+  telemetry?: boolean;
   storage?: {
     active: ProviderId;
     github?: {

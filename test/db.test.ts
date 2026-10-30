@@ -205,3 +205,80 @@ test('stale receiving rows can be found by age', async (t) => {
   assert.equal(db.listStaleReceiving(Date.now() + 60_000).length, 2);
   assert.equal(db.listStaleReceiving(Date.now() - 60_000).length, 0);
 });
+
+test('shares persist, count only active links, record views and revoke', async (t) => {
+  const db = await withDatabase(t);
+  addItem(db, 'id-photo', 'photo.jpg', 'photo');
+
+  const now = Date.now();
+  db.createShare({
+    id: 'share-active',
+    itemId: 'id-photo',
+    tokenHash: 'a'.repeat(64),
+    tokenSealed: 'sealed-a',
+    expiresAt: now + 60_000,
+  });
+  db.createShare({
+    id: 'share-expired',
+    itemId: 'id-photo',
+    tokenHash: 'b'.repeat(64),
+    tokenSealed: 'sealed-b',
+    expiresAt: now - 1,
+  });
+  db.createShare({
+    id: 'share-never',
+    itemId: 'id-photo',
+    tokenHash: 'c'.repeat(64),
+    tokenSealed: 'sealed-c',
+    expiresAt: null,
+  });
+
+  assert.equal(db.countActiveShares('id-photo'), 2);
+  assert.equal(db.getShareByTokenHash('a'.repeat(64))?.id, 'share-active');
+  assert.deepEqual(
+    db.listShares('id-photo').map((share) => share.id).sort(),
+    ['share-active', 'share-expired', 'share-never'],
+  );
+
+  db.touchShare('share-active');
+  const touched = db.getShare('share-active')!;
+  assert.equal(touched.access_count, 1);
+  assert.ok(touched.last_access_at);
+  assert.equal(touched.revoked_at, null);
+
+  assert.equal(db.revokeShare('share-active'), true);
+  assert.equal(db.revokeShare('share-active'), false);
+  assert.equal(db.countActiveShares('id-photo'), 1);
+  assert.ok(db.getShare('share-active')?.revoked_at);
+
+  db.deleteShare('share-never');
+  assert.equal(db.getShare('share-never'), null);
+  assert.equal(db.listShares('id-photo').length, 2);
+});
+
+test('a v2 database gains the shares table in place', async (t) => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'nimbus-db-v2-'));
+  let db = new Database(path.join(dir, 'nimbus.db'));
+  addItem(db, 'id-photo', 'photo.jpg', 'photo');
+  db.sqlite.exec('DROP TABLE shares; PRAGMA user_version = 2;');
+  db.close();
+
+  db = new Database(path.join(dir, 'nimbus.db'));
+  t.after(() => {
+    db.close();
+    void rm(dir, { recursive: true, force: true });
+  });
+
+  const version = db.sqlite.prepare('PRAGMA user_version').get() as { user_version?: number };
+  assert.equal(version.user_version, 3);
+
+  db.createShare({
+    id: 'share-v3',
+    itemId: 'id-photo',
+    tokenHash: 'd'.repeat(64),
+    tokenSealed: 'sealed-d',
+    expiresAt: null,
+  });
+  assert.equal(db.getShare('share-v3')?.item_id, 'id-photo');
+  assert.equal(db.countActiveShares('id-photo'), 1);
+});

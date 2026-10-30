@@ -7,6 +7,7 @@ import Fastify, {
   type FastifyReply,
   type FastifyRequest,
 } from 'fastify';
+import multipart from '@fastify/multipart';
 import { lookup as mimeLookup } from 'mime-types';
 import type { AppContext } from './context.js';
 import { config } from './config.js';
@@ -18,6 +19,7 @@ import { registerUploadRoutes } from './routes/uploads.js';
 import { registerSettingsRoutes } from './routes/settings.js';
 import { registerFolderRoutes } from './routes/folders.js';
 import { registerAccountRoutes } from './routes/account.js';
+import { registerShareRoutes } from './routes/shares.js';
 
 const CSP = [
   "default-src 'self'",
@@ -33,6 +35,7 @@ const CSP = [
   "connect-src 'self'",
   "frame-src 'self' blob:",
   "manifest-src 'self'",
+  "worker-src 'self'",
 ].join('; ');
 
 const MUTATION_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
@@ -51,9 +54,11 @@ function requestPath(request: FastifyRequest): string {
 function addSecurityHeaders(request: FastifyRequest, reply: FastifyReply): void {
   reply.header('x-content-type-options', 'nosniff');
   reply.header('referrer-policy', 'no-referrer');
-  reply.header('permissions-policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+  reply.header('permissions-policy', 'camera=(self), microphone=(), geolocation=(), payment=()');
   reply.header('cross-origin-opener-policy', 'same-origin');
-  reply.header('cross-origin-resource-policy', 'same-origin');
+  if (!reply.getHeader('cross-origin-resource-policy')) {
+    reply.header('cross-origin-resource-policy', 'same-origin');
+  }
   if (!reply.getHeader('content-security-policy')) {
     reply.header('content-security-policy', CSP);
   }
@@ -159,6 +164,17 @@ export async function buildApp(ctx: AppContext): Promise<FastifyInstance> {
     done(null, payload);
   });
 
+  // Android share-target posts arrive as streaming multipart bodies.
+  await app.register(multipart, {
+    limits: {
+      files: 40,
+      parts: 100,
+      fields: 10,
+      fieldSize: 1024 * 1024,
+      fileSize: config.maxUploadBytes > 0 ? config.maxUploadBytes : 10 * 1024 * 1024 * 1024,
+    },
+  });
+
   app.addHook('preHandler', async (request) => {
     const pathname = requestPath(request);
     if (!pathname.startsWith('/api/')) return;
@@ -236,9 +252,13 @@ export async function buildApp(ctx: AppContext): Promise<FastifyInstance> {
         try {
           const info = await stat(candidate);
           if (info.isFile()) {
-            const cacheControl = decoded.startsWith('/assets/')
-              ? 'public, max-age=31536000, immutable'
-              : 'public, max-age=86400';
+            const cacheControl =
+              decoded === '/sw.js'
+                ? 'no-cache'
+                : decoded.startsWith('/assets/')
+                  ? 'public, max-age=31536000, immutable'
+                  : 'public, max-age=86400';
+            if (decoded === '/sw.js') reply.header('service-worker-allowed', '/');
             return sendStatic(request, reply, candidate, cacheControl);
           }
         } catch {
@@ -258,6 +278,7 @@ export async function buildApp(ctx: AppContext): Promise<FastifyInstance> {
   registerItemRoutes(ctx);
   registerFolderRoutes(ctx);
   registerAccountRoutes(ctx);
+  registerShareRoutes(ctx);
 
   return app;
 }

@@ -4,6 +4,7 @@ import App from './App';
 import { DesktopTitlebar } from './components/DesktopTitlebar';
 import { isDesktop } from './desktop';
 import { applyInterfaceStyle, readInterfaceStyle } from './hooks';
+import { registerServiceWorker } from './pwa';
 import './styles.css';
 import './styles-gallery.css';
 import './styles-overlays.css';
@@ -11,6 +12,7 @@ import './styles-activity.css';
 import './styles-viewer.css';
 import './styles-settings.css';
 import './styles-auth.css';
+import './styles-share.css';
 import './styles-responsive.css';
 import './styles-desktop.css';
 import './styles-liquid-glass.css';
@@ -34,3 +36,5 @@ createRoot(container).render(
     <App />
   </StrictMode>,
 );
+
+registerServiceWorker();

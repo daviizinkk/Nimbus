@@ -23,7 +23,7 @@ function boolEnv(name: string, fallback: boolean): boolean {
 const dataDir = path.resolve(process.env.DATA_DIR || 'data');
 
 export const config = {
-  version: '1.2.0',
+  version: '1.3.0',
   brand: 'Nimbus',
   env: process.env.NODE_ENV || 'development',
   isProduction: process.env.NODE_ENV === 'production',
@@ -41,7 +41,9 @@ export const config = {
   sessionDays: Math.max(1, intEnv('SESSION_DAYS', 30)),
   defaultCacheLimitMB: Math.max(0, intEnv('CACHE_LIMIT_MB', 8192)),
   autoCacheMaxBytes: 128 * 1024 * 1024,
-  publicUrl: process.env.PUBLIC_URL || '',
+  publicUrl: (process.env.PUBLIC_URL || '').trim().replace(/\/+$/, ''),
+  // Opt-in anonymous heartbeat endpoint. Empty means nothing is ever sent.
+  telemetryUrl: (process.env.NIMBUS_TELEMETRY_URL || '').trim(),
   // Cache files are encrypted at rest by default.
   defaultCacheEncrypted: true,
 };

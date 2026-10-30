@@ -23,6 +23,7 @@ import {
   Pencil,
   Play,
   RotateCcw,
+  Share2,
   ShieldCheck,
   Trash2,
   X,
@@ -39,6 +40,7 @@ import {
   providerLabel,
 } from '../format';
 import { useBodyLock, useClickOutside } from '../hooks';
+import { ShareDialog } from './ShareDialog';
 import { ConfirmDialog, Field, IconButton, Modal, Spinner } from './ui';
 
 interface ViewerProps {
@@ -114,6 +116,7 @@ export function Viewer({
   const [current, setCurrent] = useState(item);
   const [infoOpen, setInfoOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameValue, setRenameValue] = useState(item.name);
   const [renaming, setRenaming] = useState(false);
@@ -466,6 +469,11 @@ export function Viewer({
               <Heart size={19} fill={current.favorite ? 'currentColor' : 'none'} />
             </IconAction>
           ) : null}
+          {ready && !current.trashedAt ? (
+            <IconAction label="Share public link" onClick={() => setShareOpen(true)} active={shareOpen}>
+              <Share2 size={19} />
+            </IconAction>
+          ) : null}
           {ready && !isLocal ? (
             <IconAction
               label={
@@ -518,6 +526,18 @@ export function Viewer({
                     }}
                   >
                     <FolderInput size={16} /> Move to folder
+                  </button>
+                ) : null}
+                {ready && !current.trashedAt ? (
+                  <button
+                    type="button"
+                    className="menu-item"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setShareOpen(true);
+                    }}
+                  >
+                    <Share2 size={16} /> Share public link
                   </button>
                 ) : null}
                 <button
@@ -870,6 +890,10 @@ export function Viewer({
         <div className="viewer-counter">
           {index + 1} / {items.length}
         </div>
+      ) : null}
+
+      {shareOpen ? (
+        <ShareDialog item={current} onClose={() => setShareOpen(false)} onNotify={onNotify} />
       ) : null}
 
       {renameOpen ? (

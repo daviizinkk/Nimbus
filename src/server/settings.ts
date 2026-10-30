@@ -1,4 +1,5 @@
-import type { CacheStats, ProviderId, StorageView } from '../../shared/types.js';
+import { randomBytes } from 'node:crypto';
+import type { CacheStats, ProviderId, StorageView, TelemetryView } from '../../shared/types.js';
 import { config } from './config.js';
 import { openJson, sealJson } from './crypto.js';
 import type { Database } from './db.js';
@@ -44,6 +45,16 @@ const GITHUB_NAME = /^[A-Za-z0-9_.-]{1,100}$/;
 
 function cleanName(value: string | undefined): string {
   return (value ?? '').trim();
+}
+
+function validTelemetryEndpoint(): boolean {
+  if (!config.telemetryUrl) return false;
+  try {
+    const url = new URL(config.telemetryUrl);
+    return url.protocol === 'https:' || url.protocol === 'http:';
+  } catch {
+    return false;
+  }
 }
 
 function sanitizeFolder(input: string | undefined): string {
@@ -254,5 +265,78 @@ export class VaultSettings {
     if (provider === 'github') return this.github;
     if (provider === 'webdav') return this.webdav;
     return null;
+  }
+
+  // ---------------------------------------------------------------- sharing
+
+  sealShareToken(shareId: string, token: string): string {
+    return sealJson({ token }, this.masterKey, `share.token.${shareId}`);
+  }
+
+  openShareToken(shareId: string, sealed: string): string | null {
+    const value = openJson<{ token?: string }>(sealed, this.masterKey, `share.token.${shareId}`);
+    return typeof value?.token === 'string' && value.token ? value.token : null;
+  }
+
+  // -------------------------------------------------------------- telemetry
+
+  private get telemetryEnabled(): boolean {
+    return this.db.getSetting('telemetry.enabled') === '1';
+  }
+
+  get telemetryConfigured(): boolean {
+    return validTelemetryEndpoint();
+  }
+
+  setTelemetryEnabled(enabled: boolean): void {
+    // Collection can never be enabled without a configured endpoint.
+    const effective = enabled && this.telemetryConfigured;
+    this.db.setSetting('telemetry.enabled', effective ? '1' : '0');
+    if (!effective) this.clearTelemetryIdentity();
+  }
+
+  /** Disabling statistics also forgets the random install ID. */
+  clearTelemetryIdentity(): void {
+    this.db.deleteSetting('telemetry.install_id');
+    this.db.deleteSetting('telemetry.last_attempt_at');
+    this.db.deleteSetting('telemetry.last_sent_at');
+    this.db.deleteSetting('telemetry.last_error');
+  }
+
+  getOrCreateTelemetryInstallId(): string {
+    const existing = this.db.getSetting('telemetry.install_id');
+    if (existing && /^[a-f0-9]{32}$/i.test(existing)) return existing;
+    const id = randomBytes(16).toString('hex');
+    this.db.setSetting('telemetry.install_id', id);
+    return id;
+  }
+
+  markTelemetryAttempt(): void {
+    this.db.setSetting('telemetry.last_attempt_at', String(Date.now()));
+  }
+
+  markTelemetrySuccess(): void {
+    this.db.setSetting('telemetry.last_sent_at', String(Date.now()));
+    this.db.deleteSetting('telemetry.last_error');
+  }
+
+  markTelemetryError(message: string): void {
+    this.db.setSetting('telemetry.last_error', message.slice(0, 300));
+  }
+
+  get telemetryLastAttemptAt(): number | null {
+    const raw = Number(this.db.getSetting('telemetry.last_attempt_at'));
+    return Number.isFinite(raw) && raw > 0 ? raw : null;
+  }
+
+  telemetryView(): TelemetryView {
+    const lastSentRaw = Number(this.db.getSetting('telemetry.last_sent_at'));
+    return {
+      enabled: this.telemetryEnabled && validTelemetryEndpoint(),
+      configured: validTelemetryEndpoint(),
+      installId: this.db.getSetting('telemetry.install_id'),
+      lastSentAt: Number.isFinite(lastSentRaw) && lastSentRaw > 0 ? lastSentRaw : null,
+      lastError: this.db.getSetting('telemetry.last_error'),
+    };
   }
 }

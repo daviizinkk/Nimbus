@@ -6,12 +6,12 @@
 
 <p align="center">
   <strong>A private photo, video and file library backed by the cloud you already own.</strong><br>
-  Self-hosted. Single-owner. No analytics, no third-party scripts, no vendor lock-in.
+  Self-hosted. Single-owner. No tracking by default, no third-party scripts, no vendor lock-in.
 </p>
 
 <p align="center">
   <a href="https://github.com/daviizinkk/Nimbus/releases/latest">
-    <img src="https://img.shields.io/badge/Download_for_Windows-1.2.0-6366f1?style=for-the-badge&logo=windows&logoColor=white" alt="Download Nimbus 1.2.0 for Windows">
+    <img src="https://img.shields.io/badge/Download_for_Windows-1.3.0-6366f1?style=for-the-badge&logo=windows&logoColor=white" alt="Download Nimbus 1.3.0 for Windows">
   </a>
   <a href="#quick-start">
     <img src="https://img.shields.io/badge/Run_from_source-Node.js_24-0ea5e9?style=for-the-badge&logo=node.js&logoColor=white" alt="Run Nimbus from source">
@@ -19,7 +19,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.2.0-6366f1?style=flat-square" alt="Version 1.2.0">
+  <img src="https://img.shields.io/badge/version-1.3.0-6366f1?style=flat-square" alt="Version 1.3.0">
   <img src="https://img.shields.io/badge/platform-Windows_%7C_Web-0ea5e9?style=flat-square" alt="Windows and web">
   <img src="https://img.shields.io/badge/storage-Local_%7C_GitHub_%7C_WebDAV-10b981?style=flat-square" alt="Local, GitHub Releases and WebDAV">
   <img src="https://img.shields.io/badge/cache-encrypted-8b5cf6?style=flat-square" alt="Encrypted local cache">
@@ -27,16 +27,17 @@
 
 ## Download
 
-**Nimbus 1.2.0 for Windows 10/11 x64** is available from the
+**Nimbus 1.3.0 for Windows 10/11 x64** is available from the
 [Releases page](https://github.com/daviizinkk/Nimbus/releases/latest).
 
-1. Download **Nimbus-Setup-1.2.0.exe**.
+1. Download **Nimbus-Setup-1.3.0.exe**.
 2. Run the installer and choose an install folder. The desktop shortcut is optional; the
    Start menu entry is always created.
 3. Launch **Nimbus** and complete the first-run setup. Your library stays on this PC unless
    you choose GitHub Releases or WebDAV for originals.
 
-Upgrading from 1.0.0 or 1.1.0 keeps the existing library and desktop settings in place.
+Upgrading from 1.0.0, 1.1.0 or 1.2.0 keeps the existing library and desktop settings in
+place. Older installers remain available on the Releases page.
 
 The installer is unsigned, so Windows SmartScreen may ask for confirmation. Choose
 **More info → Run anyway** if you trust the download. SHA-256 checksums and release notes are
@@ -77,32 +78,35 @@ Prefer the browser? Nimbus runs anywhere Node.js 24 is available. See
 | **Large files on GitHub** | Files above 1 GiB are split into 1 GiB release assets and stitched back together transparently for previews, downloads and range requests. |
 | **Smart encrypted cache** | Remote files are cached after first access, encrypted at rest with AES-256-GCM, limited by size, and evicted least-recently-used. Pin files for offline use. |
 | **Durable uploads** | Uploads are staged to disk and stored by a background queue with retries. Once the browser finishes sending, the upload continues even if the tab closes. |
-| **Private by default** | scrypt passwords, DB-backed sessions, HttpOnly cookies, a CSRF header on mutations, a strict CSP, and encrypted provider credentials. No telemetry. |
+| **Private by default** | scrypt passwords, DB-backed sessions, HttpOnly cookies, a CSRF header on mutations, a strict CSP, and encrypted provider credentials. Anonymous usage statistics are opt-in, off by default, and never include file names or exact counts. |
+| **Mobile and PWA** | Install Nimbus from Safari or Chrome for a standalone, touch-friendly library, take photos straight into the vault, and share images or files from Android's share sheet. |
+| **Public links** | Share a single file with an unguessable link, choose an expiry, revoke it at any time, and get rich image or video-poster previews in Discord and other chat apps. |
 | **Windows app included** | The same server and UI in a frameless Electron window, with a tray lifecycle, start-with-Windows support, native upload notifications, keyboard shortcuts, Discord Rich Presence, offline password reset, folder/log shortcuts, diagnostics and a cleanup-aware uninstaller. |
 | **One process, one database** | Node 24, Fastify 5 and built-in `node:sqlite`. No Redis, no Postgres, no separate worker, no build tooling in production. |
 
-## What's new in 1.2
+## What's new in 1.3
 
-- **Liquid Glass, on by default** — translucent surfaces, an aurora backdrop and softer
-  motion across the library, viewer, dialogs and settings. Prefer the original look? Turn off
-  **Liquid Glass interface** in Settings → General; the choice is remembered per device.
-  Reduced-motion, reduced-transparency and forced-colors preferences are respected.
-- **Tray-first desktop** — closing the window now keeps Nimbus and any running uploads alive
-  in the notification area. Right-click the tray icon to open Nimbus, upload files, open
-  settings, toggle startup behavior, or **Quit Nimbus**. The first close shows a one-time hint.
-- **Start with Windows and native notifications** — launch quietly into the tray at sign-in,
-  and get a Windows notification when uploads finish while the window is hidden, minimized or
-  unfocused. Both are opt-out in **Settings → Desktop & Discord → Window & notifications**.
-- **Keyboard quality of life** — press `?` for the shortcut sheet, `Ctrl+K` or `/` to search,
-  `G` then `A`/`P`/`V`/`D`/`F`/`T` to jump between sections, arrow keys to move through the
-  grid, and `F`/`I`/`D`/`Delete` in the viewer. A small HUD shows armed section chords.
-- **Faster full-image previews** — the viewer paints the thumbnail first and upgrades to the
-  original in the background, with limited prefetching instead of downloading every full-size
-  neighbour.
-- **New cloud artwork** — the Liquid Glass cloud now drives the installer, app icon, tray
-  glyph, favicon and release banner, with a white variant for dark surfaces.
-- **Stability and accessibility fixes** — tighter upload settling, clearer focus rings, and
-  layout fixes for small windows, dialogs and the new desktop controls.
+- **Install it like an app** ? Nimbus now ships a web app manifest and a small offline
+  service worker. Add it to your home screen from Chrome or Safari for a standalone,
+  safe-area-aware library with a mobile-first layout, larger touch targets and no address bar.
+- **Camera and Android share sheet** ? the mobile top bar has a one-tap camera button, and
+  Android can share photos, videos or files straight to Nimbus. Shared files are received by
+  the server and appear in the library even if you switch apps.
+- **Public file links with Discord previews** ? share any ready file from the viewer. Links
+  use a 24-byte random token, can expire after 24 hours, 7, 30 or 90 days (or never), and can
+  be revoked immediately. Share pages expose Open Graph and Twitter metadata with the
+  thumbnail or video poster so Discord, iMessage, Slack and similar apps render a preview.
+- **Optional anonymous statistics** ? a privacy card in onboarding and Settings can send at
+  most one heartbeat a day with the Nimbus version, platform, active storage provider and
+  coarse library buckets. It is off by default, uses a random install ID, and never includes
+  file names, vault names, paths, exact counts or IP-derived identifiers. Turning it off
+  deletes the install ID.
+- **Safer sharing by default** ? public pages are `noindex`, `no-store`, bypass the app
+  session, reject revoked or expired links, and refuse items that are still uploading or in
+  the trash. The service worker never caches `/api/`, `/s/` or the share target.
+- **Everything from 1.2** ? Liquid Glass, tray-first desktop, start with Windows, native
+  upload notifications, keyboard shortcuts and the faster thumbnail-first viewer are all
+  still here.
 
 ## How it works
 
@@ -118,7 +122,7 @@ Browser ──HTTPS──> Nimbus (Fastify + SQLite)
 - [Download](#download)
 - [A look inside](#a-look-inside)
 - [Why Nimbus](#why-nimbus)
-- [What's new in 1.2](#whats-new-in-12)
+- [What's new in 1.3](#whats-new-in-13)
 - [Features](#features)
 - [Requirements](#requirements)
 - [Quick start](#quick-start)
@@ -130,6 +134,8 @@ Browser ──HTTPS──> Nimbus (Fastify + SQLite)
 - [Why not YouTube or Instagram?](#why-not-youtube-or-instagram)
 - [Uploads and previews](#uploads-and-previews)
 - [Cache and offline files](#cache-and-offline-files)
+- [Mobile and PWA](#mobile-and-pwa)
+- [Public share links](#public-share-links)
 - [Desktop app](#desktop-app)
 - [Discord Rich Presence](#discord-rich-presence)
 - [Deleting your account and library](#deleting-your-account-and-library)
@@ -324,7 +330,10 @@ On first launch Nimbus shows an onboarding screen:
    - **This device** — local disk, ready immediately.
    - **GitHub Releases** — enter a token, owner, repository and release tag.
    - **WebDAV** — enter the server URL, credentials and folder.
-4. GitHub and WebDAV are tested before setup completes. A failed test blocks setup so you
+4. Decide whether to send anonymous usage statistics. This is **off by default**, can be
+   changed at any time in **Settings → General**, and only works when the server operator has
+   configured `NIMBUS_TELEMETRY_URL`.
+5. GitHub and WebDAV are tested before setup completes. A failed test blocks setup so you
    never end up with a library that cannot store files.
 
 Setup can only run once. Afterwards, sign in with the password. You can add or change
@@ -521,6 +530,59 @@ Cache encryption applies only to local cached copies. Originals are stored in yo
 as-is; use a private repository, HTTPS, and the provider's own encryption-at-rest features to
 protect them.
 
+## Mobile and PWA
+
+Nimbus is installable as a Progressive Web App. Serve it over HTTPS (or open it on
+`localhost`) and add it to your home screen:
+
+- **Android / Chrome:** menu → **Add to Home screen** or **Install app**.
+- **iOS / Safari:** **Share** → **Add to Home Screen**.
+
+The installed app opens in standalone mode with safe-area padding, a touch-friendly viewer,
+44 px controls where space allows, and a camera button in the top bar that opens the rear
+camera directly (`capture="environment"`). The regular Upload button still opens the system
+file picker for photos, videos and documents.
+
+On Android, installing Nimbus also registers a share target. After that, other apps can share
+images, videos and files to Nimbus; the server ingests them into the upload queue and returns
+you to the library with a count. The share target requires an authenticated session — if you
+are signed out, Nimbus asks you to sign in and share again.
+
+A PWA install requires HTTPS. An HTTP address on your LAN still works in a browser tab, but
+Chrome and Safari will not offer installation, the service worker stays inactive, and the
+share target is unavailable. Put Nimbus behind a reverse proxy with TLS to use these features.
+
+The service worker only caches the static app shell and hashed `/assets/*` files. Authenticated
+API responses, public share pages and `/share-target` are never cached, so signing out or
+revoking a link cannot leave private data in the browser cache.
+
+## Public share links
+
+Share a single ready file from the viewer using the share icon or **More actions → Share
+public link**. Each link:
+
+- uses a 24-byte cryptographically random token (`/s/<token>`), stored only as a SHA-256 hash;
+  the raw token is sealed with AES-256-GCM so Nimbus can show existing links again;
+- can expire after 24 hours, 7 days, 30 days or 90 days, or never;
+- can be revoked immediately, which makes the page, thumbnail and original return 404;
+- is limited to eight active links per item;
+- serves an HTML page with Open Graph and Twitter metadata, plus `/s/<token>/thumb` and
+  `/s/<token>/content` for the preview and original.
+
+Discord, iMessage, Slack and similar apps show the image thumbnail, or the video poster for
+videos. Whether Discord plays a video inline depends on Discord and the video codec; the share
+page always includes a normal player and a download link. File links show a file card and the
+generic Nimbus artwork.
+
+Public share pages are `noindex, nofollow, noarchive` and `no-store`, bypass the app session
+and CSRF check, and refuse links whose item is still uploading, in the trash, expired or
+revoked. Links are not password-protected: anyone who has the URL can view the file, so treat
+the link itself as the secret.
+
+Set `PUBLIC_URL` to the externally reachable origin (for example
+`https://nimbus.example.com`) when Nimbus runs behind a proxy. Share links and preview metadata
+are built from it; without it, Nimbus uses the request's host and protocol.
+
 ## Desktop app
 
 Nimbus also ships as a lightweight Windows desktop app. It is the same server and the same
@@ -534,7 +596,7 @@ npm ci
 npm run desktop:dist      # NSIS installer in release/
 ```
 
-The installer is written to `release/Nimbus-Setup-1.2.0.exe` (the version comes from
+The installer is written to `release/Nimbus-Setup-1.3.0.exe` (the version comes from
 `package.json`). Run it, choose a folder, and decide whether to add a desktop shortcut. The
 desktop-shortcut option is checked by default; the Start menu entry is always created. Launch
 **Nimbus** from either place. Windows SmartScreen may warn about an unsigned installer; choose
@@ -720,10 +782,15 @@ Nimbus is designed for one owner and is not a multi-tenant service.
 - **Credentials:** GitHub tokens and WebDAV passwords are sealed with AES-256-GCM using a
   random master key at `DATA_DIR/.master-key` (mode `0600`). Session cookies never contain
   provider credentials.
-- **No telemetry:** the browser only talks to Nimbus. Nimbus makes outbound requests only to
-  the storage provider you configure (GitHub or WebDAV). There are no third-party scripts,
-  fonts or analytics. Discord Rich Presence talks only to the local Discord client and can be
-  switched off in Settings.
+- **Telemetry is opt-in:** the browser only talks to Nimbus. Nimbus makes outbound requests
+  only to the storage provider you configure (GitHub or WebDAV) and, if you explicitly enable
+  anonymous statistics, to the endpoint set in `NIMBUS_TELEMETRY_URL`. There are no
+  third-party scripts or fonts. The heartbeat is sent at most once a day and contains the
+  version, platform, storage provider, a random install ID and coarse library buckets; it
+  never contains file names, vault names, paths, exact counts or IP-derived identifiers.
+  Disabling it deletes the install ID. Without `NIMBUS_TELEMETRY_URL`, collection is a no-op
+  and the Settings switch stays disabled. Discord Rich Presence talks only to the local
+  Discord client and can be switched off in Settings.
 - **Desktop hardening:** context isolation and Chromium sandboxing are on, Node integration is
   off, and the preload bridge exposes only fixed methods for window controls, Discord settings,
   folder shortcuts, diagnostics, the uninstaller and an offline password reset. It does not
@@ -772,7 +839,8 @@ start.
 | `MAX_UPLOAD_MB` | `4096` | App-level upload limit in MB. Raise it for files over 4 GiB. `0` disables the app-level limit; provider and proxy limits still apply. On GitHub, large files are split into 1 GiB assets regardless of this setting. |
 | `SESSION_DAYS` | `30` | Session lifetime in days. |
 | `CACHE_LIMIT_MB` | `8192` | Initial cache limit. Once changed in Settings, the stored value wins. `0` disables automatic caching. |
-| `PUBLIC_URL` | empty | Display-only URL printed in the startup banner. It does not affect routing. |
+| `PUBLIC_URL` | empty | Externally reachable origin, for example `https://nimbus.example.com`. Used for public share links and their Open Graph metadata, and printed in the startup banner. Without it, Nimbus derives the origin from each request. |
+| `NIMBUS_TELEMETRY_URL` | empty | Optional endpoint for anonymous usage statistics; use HTTPS. When empty, telemetry is fully disabled, nothing is sent and the Settings switch is read-only. The endpoint receives a JSON heartbeat at most once a day. |
 | `LOG_LEVEL` | `info` | Fastify/Pino log level (`fatal`, `error`, `warn`, `info`, `debug`, `trace`). |
 
 Provider credentials, the vault name, password hash and cache settings are stored in the
@@ -909,7 +977,7 @@ Health check (unauthenticated):
 
 ```bash
 curl -fsS http://127.0.0.1:8787/api/health
-# {"ok":true,"version":"1.2.0","uptime":123}
+# {"ok":true,"version":"1.3.0","uptime":123}
 ```
 
 Logs go to stdout/stderr. Set `LOG_LEVEL=info` (default) or `debug` for more detail. Nimbus
@@ -1085,8 +1153,9 @@ See [CREDITS.md](CREDITS.md) for the full list.
 
 ## Limitations
 
-- **Single owner.** There are no user accounts, sharing links, public galleries, comments or
-  per-item permissions.
+- **Single owner.** There are no user accounts, comments, per-user permissions, folder or
+  album links, or password-protected shares. Public links expose one file at a time to anyone
+  who has the URL; treat each link as a secret and revoke it when it is no longer needed.
 - **No end-to-end encryption.** Originals are stored as-is in your provider. Nimbus encrypts
   the local cache, not the cloud copy.
 - **No server-side transcoding.** Video playback depends on the browser's codecs; unsupported

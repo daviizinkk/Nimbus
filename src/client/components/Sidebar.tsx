@@ -1,6 +1,7 @@
 import type { ProviderId, StorageStats } from '../../../shared/types';
 import type { Section, ThemeMode } from '../hooks';
 import {
+  Camera,
   CheckSquare,
   Heart,
   Image,
@@ -33,6 +34,7 @@ interface SidebarProps {
   onThemeChange: (theme: ThemeMode) => void;
   onNavigate: (section: Section) => void;
   onUpload: () => void;
+  onTakePhoto: () => void;
   onOpenSettings: () => void;
   onLogout: () => void;
   mobileOpen: boolean;
@@ -67,6 +69,7 @@ export function Sidebar({
   onThemeChange,
   onNavigate,
   onUpload,
+  onTakePhoto,
   onOpenSettings,
   onLogout,
   mobileOpen,
@@ -114,6 +117,11 @@ export function Sidebar({
           <span className="upload-cta-plus">
             <Plus size={16} />
           </span>
+        </button>
+
+        <button type="button" className="sidebar-camera" onClick={onTakePhoto}>
+          <Camera size={18} />
+          <span>Take a photo</span>
         </button>
 
         <nav className="sidebar-nav" aria-label="Sections">
@@ -175,6 +183,7 @@ interface TopbarProps {
   onOpenSettings: () => void;
   onOpenShortcuts: () => void;
   onUpload: () => void;
+  onTakePhoto: () => void;
   selectionMode: boolean;
   onToggleSelection: () => void;
   showSelect: boolean;
@@ -187,6 +196,7 @@ export function Topbar({
   onOpenSettings,
   onOpenShortcuts,
   onUpload,
+  onTakePhoto,
   selectionMode,
   onToggleSelection,
   showSelect,
@@ -231,6 +241,9 @@ export function Topbar({
             <span>{selectionMode ? 'Done' : 'Select'}</span>
           </button>
         ) : null}
+        <button type="button" className="icon-btn icon-btn-md topbar-camera" onClick={onTakePhoto} aria-label="Take a photo">
+          <Camera size={20} />
+        </button>
         <button type="button" className="icon-btn icon-btn-md topbar-upload" onClick={onUpload} aria-label="Upload files">
           <Plus size={20} />
         </button>

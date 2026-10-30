@@ -7,6 +7,7 @@ import type {
   StorageStats,
 } from '../../../shared/types';
 import {
+  Activity,
   AlertCircle,
   CheckCircle2,
   Cloud,
@@ -35,7 +36,7 @@ import {
 } from 'lucide-react';
 import { api } from '../api';
 import { isDesktop } from '../desktop';
-import { formatBytes } from '../format';
+import { formatBytes, formatDateTime } from '../format';
 import type { InterfaceStyle, ThemeMode } from '../hooks';
 import { DeleteLibraryDialog } from './DeleteLibraryDialog';
 import { DesktopSettings } from './DesktopSettings';
@@ -145,6 +146,7 @@ export function SettingsModal({
   const [cacheSaving, setCacheSaving] = useState(false);
   const [encryptionTarget, setEncryptionTarget] = useState<boolean | null>(null);
   const [clearTarget, setClearTarget] = useState<boolean | null>(null);
+  const [telemetryBusy, setTelemetryBusy] = useState(false);
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -380,6 +382,24 @@ export function SettingsModal({
     }
   };
 
+  const toggleTelemetry = async (enabled: boolean) => {
+    setTelemetryBusy(true);
+    try {
+      const result = await api.setTelemetry(enabled);
+      setSettings((value) => (value ? { ...value, telemetry: result.telemetry } : value));
+      notify(
+        enabled
+          ? 'Anonymous usage statistics are on. You can turn them off at any time.'
+          : 'Anonymous usage statistics are off. The random install ID was deleted.',
+        'success',
+      );
+    } catch (error) {
+      notify(error instanceof Error ? error.message : 'Could not update the statistics preference.', 'error');
+    } finally {
+      setTelemetryBusy(false);
+    }
+  };
+
   const changePassword = async () => {
     setAccountError(null);
     if (newPassword.length < 8) {
@@ -532,6 +552,40 @@ export function SettingsModal({
                     <kbd>?</kbd>
                   </button>
                   <p className="form-note">Appearance is remembered on this device.</p>
+                </div>
+
+                <div className="settings-card">
+                  <div className="settings-card-head">
+                    <div>
+                      <h4><Activity size={16} /> Privacy</h4>
+                      <p>Anonymous usage statistics are optional and off by default.</p>
+                    </div>
+                  </div>
+                  <Toggle
+                    checked={settingView?.telemetry.enabled ?? false}
+                    onChange={(checked) => void toggleTelemetry(checked)}
+                    disabled={telemetryBusy || !settingView?.telemetry.configured}
+                    label="Send anonymous usage statistics"
+                    description="At most one small heartbeat a day: Nimbus version, platform, active storage provider and coarse library size. No file names, vault names, paths or exact counts."
+                  />
+                  {!settingView?.telemetry.configured ? (
+                    <p className="form-note">
+                      Statistics cannot be sent because <code>NIMBUS_TELEMETRY_URL</code> is not configured
+                      on this server. This switch stays disabled until the owner sets it.
+                    </p>
+                  ) : settingView?.telemetry.lastSentAt ? (
+                    <p className="form-note">
+                      Last heartbeat sent {formatDateTime(settingView.telemetry.lastSentAt)}. Turning this
+                      off deletes the random install ID immediately.
+                    </p>
+                  ) : (
+                    <p className="form-note">
+                      Nothing has been sent yet. Turning this off deletes the random install ID.
+                    </p>
+                  )}
+                  {settingView?.telemetry.lastError ? (
+                    <p className="form-note is-error">Last attempt failed: {settingView.telemetry.lastError}</p>
+                  ) : null}
                 </div>
 
                 <div className="settings-card">
@@ -1146,7 +1200,7 @@ export function SettingsModal({
                   </div>
                   <div>
                     <h3>Nimbus</h3>
-                    <p>Version {settingView?.version ?? '1.2.0'} · A private cloud you actually own.</p>
+                    <p>Version {settingView?.version ?? '1.3.0'} · A private cloud you actually own.</p>
                   </div>
                 </div>
 
@@ -1201,7 +1255,8 @@ export function SettingsModal({
                     <li>Single-owner access with scrypt password hashing and DB-backed sessions.</li>
                     <li>HttpOnly, SameSite=Lax cookies plus a CSRF header on every mutation.</li>
                     <li>Storage credentials sealed with AES-256-GCM; cache encryption is toggleable.</li>
-                    <li>No analytics, no third-party scripts, no outbound traffic except to your chosen storage provider.</li>
+                    <li>No third-party scripts or ads. No outbound traffic except to your chosen storage provider and, only if you opt in, the anonymous statistics endpoint.</li>
+                    <li>Anonymous usage statistics are off by default and can be disabled at any time in General settings.</li>
                     <li>Strict CSP, nosniff, frameguard and restrictive permissions headers.</li>
                   </ul>
                   <div className="settings-callout inside">

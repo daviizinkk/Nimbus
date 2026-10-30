@@ -12,7 +12,11 @@ import type {
   ProviderId,
   ProviderTestResult,
   SetupRequest,
+  ShareDTO,
+  ShareExpiry,
+  ShareListResponse,
   StorageStats,
+  TelemetryView,
   UploadCompleteRequest,
 } from '../../shared/types';
 
@@ -217,6 +221,21 @@ export const api = {
     request(`/api/items/${encodeURIComponent(id)}/offline`, { method: 'DELETE' }),
 
   stats: (): Promise<StatsResponse> => request('/api/stats'),
+
+  listShares: (itemId: string): Promise<ShareListResponse> =>
+    request(`/api/items/${encodeURIComponent(itemId)}/shares`),
+
+  createShare: (itemId: string, expiry: ShareExpiry): Promise<{ share: ShareDTO }> =>
+    request(`/api/items/${encodeURIComponent(itemId)}/shares`, {
+      method: 'POST',
+      body: { expiry },
+    }),
+
+  revokeShare: (shareId: string): Promise<{ ok: true }> =>
+    request(`/api/shares/${encodeURIComponent(shareId)}/revoke`, { method: 'POST' }),
+
+  setTelemetry: (enabled: boolean): Promise<{ telemetry: TelemetryView }> =>
+    request('/api/settings/telemetry', { method: 'PATCH', body: { enabled } }),
 
   initUpload: (body: {
     name: string;

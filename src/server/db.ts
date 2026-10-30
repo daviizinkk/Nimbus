@@ -47,6 +47,19 @@ export interface DbFolder {
   updated_at: number;
 }
 
+export interface DbShare {
+  id: string;
+  item_id: string;
+  token_hash: string;
+  /** AES-GCM sealed token, so the owner can copy an existing link later. */
+  token_sealed: string;
+  created_at: number;
+  expires_at: number | null;
+  revoked_at: number | null;
+  last_access_at: number | null;
+  access_count: number;
+}
+
 interface FolderRow extends DbFolder {
   item_count: number;
   folder_count: number;
@@ -151,7 +164,7 @@ export class Database {
   private migrate(): void {
     const versionRow = this.sqlite.prepare('PRAGMA user_version').get() as { user_version?: number } | undefined;
     const version = versionRow?.user_version ?? 0;
-    if (version > 2) {
+    if (version > 3) {
       throw new Error(`Database schema version ${version} is newer than this app supports.`);
     }
     if (version === 0) {
@@ -226,6 +239,26 @@ export class Database {
         ALTER TABLE items ADD COLUMN folder_id TEXT REFERENCES folders(id) ON DELETE SET NULL;
         CREATE INDEX IF NOT EXISTS idx_items_folder ON items (folder_id);
         PRAGMA user_version = 2;
+        COMMIT;
+      `);
+    }
+    if (version < 3) {
+      this.sqlite.exec(`
+        BEGIN;
+        CREATE TABLE IF NOT EXISTS shares (
+          id TEXT PRIMARY KEY,
+          item_id TEXT NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+          token_hash TEXT NOT NULL UNIQUE,
+          token_sealed TEXT NOT NULL,
+          created_at INTEGER NOT NULL,
+          expires_at INTEGER,
+          revoked_at INTEGER,
+          last_access_at INTEGER,
+          access_count INTEGER NOT NULL DEFAULT 0
+        );
+        CREATE INDEX IF NOT EXISTS idx_shares_item ON shares (item_id);
+        CREATE INDEX IF NOT EXISTS idx_shares_token ON shares (token_hash);
+        PRAGMA user_version = 3;
         COMMIT;
       `);
     }
@@ -494,6 +527,69 @@ export class Database {
     };
   }
 
+  // ------------------------------------------------------------------ shares
+
+  createShare(share: {
+    id: string;
+    itemId: string;
+    tokenHash: string;
+    tokenSealed: string;
+    expiresAt: number | null;
+  }): void {
+    this.sqlite
+      .prepare(
+        `INSERT INTO shares
+          (id, item_id, token_hash, token_sealed, created_at, expires_at)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+      )
+      .run(share.id, share.itemId, share.tokenHash, share.tokenSealed, Date.now(), share.expiresAt);
+  }
+
+  getShare(id: string): DbShare | null {
+    const row = this.sqlite.prepare('SELECT * FROM shares WHERE id = ?').get(id) as unknown as DbShare | undefined;
+    return row ?? null;
+  }
+
+  getShareByTokenHash(tokenHash: string): DbShare | null {
+    const row = this.sqlite
+      .prepare('SELECT * FROM shares WHERE token_hash = ?')
+      .get(tokenHash) as unknown as DbShare | undefined;
+    return row ?? null;
+  }
+
+  listShares(itemId: string): DbShare[] {
+    return this.sqlite
+      .prepare('SELECT * FROM shares WHERE item_id = ? ORDER BY created_at DESC')
+      .all(itemId) as unknown as DbShare[];
+  }
+
+  countActiveShares(itemId: string): number {
+    const row = this.sqlite
+      .prepare(
+        `SELECT COUNT(*) AS count FROM shares
+         WHERE item_id = ? AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at > ?)`,
+      )
+      .get(itemId, Date.now()) as { count?: number } | undefined;
+    return asNumber(row?.count);
+  }
+
+  revokeShare(id: string): boolean {
+    const result = this.sqlite
+      .prepare('UPDATE shares SET revoked_at = ? WHERE id = ? AND revoked_at IS NULL')
+      .run(Date.now(), id);
+    return Number(result.changes) > 0;
+  }
+
+  touchShare(id: string): void {
+    this.sqlite
+      .prepare('UPDATE shares SET last_access_at = ?, access_count = access_count + 1 WHERE id = ?')
+      .run(Date.now(), id);
+  }
+
+  deleteShare(id: string): void {
+    this.sqlite.prepare('DELETE FROM shares WHERE id = ?').run(id);
+  }
+
   // ----------------------------------------------------------------- folders
 
   private folderSelect(parentClause: string): string {
@@ -619,6 +715,7 @@ export class Database {
   resetLibraryData(): void {
     this.sqlite.exec('BEGIN;');
     try {
+      this.sqlite.prepare('DELETE FROM shares').run();
       this.sqlite.prepare('DELETE FROM items').run();
       this.sqlite.prepare('DELETE FROM folders').run();
       this.sqlite.prepare('DELETE FROM cache_entries').run();

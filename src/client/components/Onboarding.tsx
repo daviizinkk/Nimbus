@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { AppStatus, ProviderId, ProviderTestResult, SetupRequest } from '../../../shared/types';
 import {
+  Activity,
   AlertCircle,
   ArrowLeft,
   ArrowRight,
@@ -20,10 +21,11 @@ import {
 } from 'lucide-react';
 import { api } from '../api';
 import { isDesktop } from '../desktop';
-import { Logo, Spinner } from './ui';
+import { Logo, Spinner, Toggle } from './ui';
 
 interface OnboardingProps {
   onComplete: (status: AppStatus) => void;
+  telemetryConfigured: boolean;
 }
 
 const STORAGE_OPTIONS: Array<{
@@ -52,7 +54,7 @@ const STORAGE_OPTIONS: Array<{
   },
 ];
 
-export function Onboarding({ onComplete }: OnboardingProps) {
+export function Onboarding({ onComplete, telemetryConfigured }: OnboardingProps) {
   const [step, setStep] = useState(1);
   const [vaultName, setVaultName] = useState('My Nimbus');
   const [password, setPassword] = useState('');
@@ -62,6 +64,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   const [github, setGithub] = useState({ token: '', owner: '', repo: '', releaseTag: 'nimbus-storage' });
   const [webdav, setWebdav] = useState({ url: '', username: '', password: '', folder: 'nimbus' });
   const [repoName, setRepoName] = useState('nimbus-library');
+  const [telemetry, setTelemetry] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<ProviderTestResult | null>(null);
@@ -176,6 +179,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
       const status = await api.setup({
         vaultName: vaultName.trim(),
         password,
+        telemetry,
         storage,
       });
       onComplete(status);
@@ -228,12 +232,12 @@ export function Onboarding({ onComplete }: OnboardingProps) {
               <span><Zap size={17} /></span>
               <div>
                 <strong>No subscriptions</strong>
-                <p>No accounts to rent, no analytics, no lock-in. Just your library.</p>
+                <p>No accounts to rent, no ads, no lock-in. Just your library.</p>
               </div>
             </li>
           </ul>
         </div>
-        <p className="onboarding-foot">Nimbus 1.2 · Built for one owner: you.</p>
+        <p className="onboarding-foot">Nimbus 1.3 · Built for one owner: you.</p>
       </aside>
 
       <main className="onboarding-main">
@@ -559,6 +563,25 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                   <span>Access</span>
                   <strong><KeyRound size={14} /> Single owner · this password</strong>
                 </div>
+                <div className="review-row">
+                  <span>Anonymous statistics</span>
+                  <strong><Activity size={14} /> {telemetry ? 'Opted in' : 'Off'}</strong>
+                </div>
+              </div>
+
+              <div className="onboarding-telemetry">
+                <Toggle
+                  checked={telemetry}
+                  onChange={setTelemetry}
+                  disabled={!telemetryConfigured}
+                  label="Send anonymous usage statistics"
+                  description="Optional, off by default. At most a daily heartbeat with the Nimbus version, platform, storage provider and coarse library size. No file names, vault names or exact counts."
+                />
+                <p className="field-hint">
+                  {telemetryConfigured
+                    ? 'You can change this later in Settings → General. Turning it off deletes the random install ID.'
+                    : 'This server has no telemetry endpoint configured, so nothing can be sent. The switch stays disabled until the owner sets NIMBUS_TELEMETRY_URL.'}
+                </p>
               </div>
 
               {provider !== 'local' ? (

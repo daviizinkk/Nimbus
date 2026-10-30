@@ -10,6 +10,7 @@ import { purgeItem } from './items-service.js';
 import { UploadQueue } from './queue.js';
 import { VaultSettings } from './settings.js';
 import { createProvider, storageAgent } from './storage/index.js';
+import { TelemetryService } from './telemetry.js';
 
 async function main(): Promise<void> {
   await Promise.all([
@@ -28,6 +29,7 @@ async function main(): Promise<void> {
   const getProvider = (provider: 'local' | 'github' | 'webdav') => createProvider(provider, settings);
   const cache = new CacheManager(db, settings, cacheKey, getProvider);
   const queue = new UploadQueue(db, getProvider);
+  const telemetry = new TelemetryService(db, settings);
 
   await cache.initialize();
   await queue.resume();
@@ -40,12 +42,14 @@ async function main(): Promise<void> {
     auth,
     cache,
     queue,
+    telemetry,
     getProvider,
   };
   const app = await buildApp(ctx);
 
   const host = config.host;
   await app.listen({ host, port: config.port });
+  telemetry.start();
   const displayHost = host === '0.0.0.0' || host === '::' ? 'localhost' : host;
   const url = config.publicUrl || `http://${displayHost}:${config.port}`;
   console.log('');
@@ -83,6 +87,7 @@ async function main(): Promise<void> {
     console.log(`\n[server] ${signal} received, shutting down…`);
     clearInterval(purgeTimer);
     clearInterval(sessionTimer);
+    telemetry.stop();
     try {
       await app.close();
       await queue.shutdown();

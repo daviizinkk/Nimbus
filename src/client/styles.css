@@ -913,6 +913,31 @@ textarea.input {
   opacity: 0.9;
 }
 
+.sidebar-camera,
+.topbar-camera {
+  display: none;
+}
+
+.sidebar-camera {
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 42px;
+  margin: -8px 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.sidebar-camera:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
 .sidebar-nav {
   display: flex;
   flex-direction: column;

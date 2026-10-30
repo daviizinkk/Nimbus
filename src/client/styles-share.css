@@ -1,0 +1,229 @@
+/* ==========================================================================
+   Nimbus — public share links
+   ========================================================================== */
+
+.share-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.share-callout {
+  display: flex;
+  gap: 12px;
+  padding: 14px 15px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.share-callout > svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--accent);
+}
+
+.share-callout strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 3px;
+}
+
+.share-callout p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  line-height: 1.55;
+}
+
+.share-create {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.share-create > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.share-create .input {
+  width: 100%;
+}
+
+.share-create .btn {
+  min-height: 42px;
+  white-space: nowrap;
+}
+
+.share-loading,
+.share-error,
+.share-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 96px;
+  padding: 18px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.share-empty {
+  flex-direction: column;
+}
+
+.share-empty svg {
+  color: var(--text-muted);
+}
+
+.share-error {
+  color: var(--danger);
+  border-color: var(--danger-border);
+  background: var(--danger-soft);
+}
+
+.share-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.share-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.share-row.is-inactive {
+  opacity: 0.72;
+  background: var(--surface-2);
+}
+
+.share-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.share-url-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-2);
+  color: var(--text-muted);
+}
+
+.share-url {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+}
+
+.share-url-wrap:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.share-row-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px 12px;
+  color: var(--text-muted);
+  font-size: 10.5px;
+}
+
+.share-row-meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.share-status.is-active {
+  color: var(--success);
+}
+
+.share-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.share-row-actions .btn {
+  min-height: 34px;
+}
+
+.share-history {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.share-history summary {
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  padding: 3px 0 10px;
+}
+
+.share-history summary:hover {
+  color: var(--text);
+}
+
+.form-note.is-error {
+  color: var(--danger);
+}
+
+.onboarding-telemetry {
+  margin-top: 4px;
+  padding: 4px 14px 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.onboarding-telemetry .toggle-row {
+  padding: 10px 0;
+}
+
+.onboarding-telemetry .field-hint {
+  margin: 0 0 2px;
+}
+
+@media (max-width: 560px) {
+  .share-create {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .share-create .btn {
+    justify-content: center;
+  }
+
+  .share-row-actions .btn {
+    flex: 1;
+    justify-content: center;
+  }
+}

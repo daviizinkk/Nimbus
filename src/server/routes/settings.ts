@@ -14,6 +14,8 @@ function settingsView(ctx: AppContext): AppSettingsView {
     version: config.version,
     storage: ctx.settings.publicStorage(),
     cache: ctx.cache.stats(),
+    telemetry: ctx.settings.telemetryView(),
+    sharing: { publicUrl: config.publicUrl },
   };
 }
 
@@ -31,6 +33,14 @@ export function registerSettingsRoutes(ctx: AppContext): void {
   const { app, settings, cache, db } = ctx;
 
   app.get('/api/settings', async () => settingsView(ctx));
+
+  app.patch('/api/settings/telemetry', async (request) => {
+    const body = (request.body ?? {}) as { enabled?: unknown };
+    if (typeof body.enabled !== 'boolean') throw new ApiError(400, 'Expected an enabled boolean.');
+    settings.setTelemetryEnabled(body.enabled);
+    if (body.enabled) void ctx.telemetry.sendNow();
+    return { telemetry: settings.telemetryView() };
+  });
 
   app.patch('/api/settings', async (request) => {
     const body = (request.body ?? {}) as { vaultName?: string };
